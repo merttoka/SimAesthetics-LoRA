@@ -1,0 +1,53 @@
+# ai-toolkit LoRA training config — Flux dev, cloud A100 (24GB+)
+# Usage: python run.py config/train_config_flux.yaml
+
+job: extension
+config:
+  name: "dla_aesthetic_flux"
+  process:
+    - type: "sd_trainer"
+      training_folder: "output/dla_aesthetic_flux"
+      device: "cuda:0"
+      trigger_word: "dlaaesthetic"
+      network:
+        type: "lora"
+        linear: 16
+        linear_alpha: 16
+      save:
+        dtype: float16
+        save_every: 500
+        max_step_saves_to_keep: 3
+      datasets:
+        - folder_path: "/path/to/datasets/dla_aesthetic"
+          caption_ext: "txt"
+          caption_dropout_rate: 0.05
+          resolution: 1024
+          is_reg: false
+      train:
+        batch_size: 1
+        steps: 1500
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        noise_scheduler: "flowmatch"
+        optimizer: "prodigy"          # auto-tunes LR for Flux
+        lr: 1.0                       # prodigy manages actual LR
+        lr_scheduler: "constant"
+        max_denoising_steps: 1000
+      model:
+        name_or_path: "black-forest-labs/FLUX.1-dev"
+        is_flux: true
+        quantize: true                # fp8 quantization for VRAM
+      sample:
+        sampler: "flowmatch"
+        sample_every: 250
+        width: 1024
+        height: 1024
+        prompts:
+          - "dlaaesthetic, bioluminescent crystalline ecosystem, fractal dendritic branches, scanning electron microscope, ice blue and warm amber"
+          - "dlaaesthetic, neural network visualization, branching pathways, dark background, glowing nodes"
+        seed: 42
+        walk_seed: true
+        guidance_scale: 3.5
+        sample_steps: 28

@@ -1,0 +1,53 @@
+# ai-toolkit LoRA training config — SDXL, local 3080 (10GB)
+# Usage: python run.py config/train_config_sdxl.yaml
+
+job: extension
+config:
+  name: "dla_aesthetic_sdxl"
+  process:
+    - type: "sd_trainer"
+      training_folder: "output/dla_aesthetic_sdxl"
+      device: "cuda:0"
+      trigger_word: "dlaaesthetic"
+      network:
+        type: "lora"
+        linear: 16          # rank 16 — fits 10GB VRAM
+        linear_alpha: 16
+      save:
+        dtype: float16
+        save_every: 500
+        max_step_saves_to_keep: 3
+      datasets:
+        - folder_path: "/path/to/datasets/dla_aesthetic"
+          caption_ext: "txt"
+          caption_dropout_rate: 0.05
+          resolution: 1024
+          is_reg: false
+      train:
+        batch_size: 1
+        steps: 2000
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        noise_scheduler: "ddpm"
+        optimizer: "adamw8bit"    # bitsandbytes 8-bit Adam
+        lr: 1e-4
+        lr_scheduler: "cosine"
+        max_denoising_steps: 1000
+      model:
+        name_or_path: "stabilityai/stable-diffusion-xl-base-1.0"
+        is_xl: true
+      sample:
+        sampler: "dpmpp_2m_sde"
+        sample_every: 250
+        width: 1024
+        height: 1024
+        prompts:
+          - "dlaaesthetic, bioluminescent crystalline ecosystem, fractal dendritic branches, scanning electron microscope, ice blue and warm amber"
+          - "dlaaesthetic, neural network visualization, branching pathways, dark background, glowing nodes"
+        neg: ""
+        seed: 42
+        walk_seed: true
+        guidance_scale: 7.0
+        sample_steps: 30

@@ -1,0 +1,9 @@
+# Ignored
+__pycache__/
+*.pyc
+.DS_Store
+datasets/raw/
+outputs/
+loras/*.safetensors
+*.ckpt
+*.pt

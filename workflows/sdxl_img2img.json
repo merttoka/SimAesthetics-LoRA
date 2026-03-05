@@ -1,0 +1,67 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    }
+  },
+  "2": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": ["1", 1]
+    },
+    "_meta": { "title": "Negative Prompt" }
+  },
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 0,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 0.7,
+      "model": ["1", 0],
+      "positive": ["6", 0],
+      "negative": ["2", 0],
+      "latent_image": ["5", 0]
+    }
+  },
+  "4": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["1", 2]
+    }
+  },
+  "5": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["10", 0],
+      "vae": ["1", 2]
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "A bioluminescent crystalline ecosystem with dense fractal dendritic branches resembling neural pathways and river deltas. Cool blue-white luminescence pulses through interconnected nodes. Scanning electron microscope aesthetic with false-color enhancement in ice blue and warm amber, extreme depth of field. Match the spatial distribution of detail from the input image exactly. Areas with bright structure get rich detail and texture. Areas that are dark or empty remain as flat, untextured, uniform surfaces with no added detail.",
+      "clip": ["1", 1]
+    },
+    "_meta": { "title": "Positive Prompt" }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "dla_img2img",
+      "images": ["4", 0]
+    }
+  },
+  "10": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input.png"
+    },
+    "_meta": { "title": "DLA Frame Input" }
+  }
+}

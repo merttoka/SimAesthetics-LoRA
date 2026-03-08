@@ -10,7 +10,7 @@ config:
   name: "sim_aesthetic_sdxl"
   process:
     - type: "sd_trainer"
-      training_folder: "output/sim_aesthetic_sdxl"
+      training_folder: "D:/ComfyUI/ai-toolkit/outputs/sim_aesthetic_sdxl"
       device: "cuda:0"
       trigger_word: "simaesthetic"
       network:
@@ -22,7 +22,7 @@ config:
         save_every: 250     # checkpoint every 250 steps for eval
         max_step_saves_to_keep: 5
       datasets:
-        - folder_path: "D:/datasets/sim_aesthetic"   # UPDATE to your Windows path
+        - folder_path: "D:/ComfyUI/datasets/sim_aesthetic"   # UPDATE to your Windows path
           caption_ext: "txt"
           caption_dropout_rate: 0.05   # 5% chance to drop caption (improves generalization)
           resolution: 1024
@@ -40,7 +40,7 @@ config:
         lr_scheduler: "cosine"
         max_denoising_steps: 1000
       model:
-        name_or_path: "stabilityai/stable-diffusion-xl-base-1.0"
+        name_or_path: "D:/ComfyUI/models/checkpoints/stable-diffusion-xl-base-1.0"
         is_xl: true
       sample:
         sampler: "dpmpp_2m_sde"

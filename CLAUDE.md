@@ -5,37 +5,38 @@ ComfyUI + LoRA pipeline for generative simulation aesthetics. Replaces BFL API w
 ## Architecture
 - **Mac** runs scripts (Python), sends to ComfyUI on **Windows 3080** via LAN
 - ComfyUI API at `http://<windows-ip>:8188`
-- Cloud (RunPod A100) for Flux training + high-res inference
+- Cloud (RunPod L40S) for SDXL LoRA training
 
 ## Key Scripts
 - `comfyui_client.py` — API client (replaces bfl.ts)
 - `batch_process.py` — parallel/chained frame processing
-- `prepare_dataset.py` — LoRA dataset prep, lifecycle stage captions, Florence-2 auto-captioning
-- `scrape_textures.py` — CC-licensed bio texture scraper (iNaturalist, Wikimedia Commons)
-- `raster_to_controlnet.py` — satellite/GeoTIFF → ControlNet-ready PNG (grayscale/viridis/binary)
-- `export_frames.py` — DLA frame extraction (ZIP or Playwright)
+- `prepare_dataset.py` — LoRA dataset prep (random crops, brightness filter, captions)
+- `make_grid.py` — side-by-side comparison grid builder
+- `pod.sh` — RunPod SSH/SCP helper
 - `sweep_denoise.py` — parameter sweep with comparison grids
-- `sweep_txt2img.py` — KSampler settings sweep (sampler, cfg, steps, scheduler)
+- `sweep_txt2img.py` — KSampler settings sweep
 
 ## Workflows (ComfyUI API format JSON)
-- `sdxl_img2img.json` — basic img2img
-- `sdxl_controlnet_canny.json` — ControlNet canny
-- `sdxl_controlnet_ipa.json` — ControlNet + IPAdapter (full BFL API equivalent)
-- `sdxl_controlnet_lora.json` — ControlNet + custom LoRA
-- `flux_controlnet_depth_lora.json` — FLUX + Depth ControlNet + LoRA (lifecycle prototype)
+- `sdxl_img2img.json` — basic img2img (no LoRA, baseline)
+- `sdxl_img2img_lora.json` — **img2img + LoRA (best approach)** — preserves void, adds texture
+- `sdxl_controlnet_canny.json` — ControlNet Canny (no LoRA)
+- `sdxl_controlnet_lora.json` — img2img + ControlNet Canny + LoRA
+- `sdxl_controlnet_ipa.json` — ControlNet + IPAdapter (style ref from prev frame)
+- `flux_controlnet_depth_lora.json` — FLUX + Depth ControlNet + LoRA (untested, needs A100)
 
-## Biomass LoRA Training
-- Trigger word: `biomaesthetic`
-- 5 lifecycle stages: pristine growth → mature → aging → decay → necrotic
-- `--stage-range 1,5` in prepare_dataset.py auto-interpolates captions across frame sequences
-- Dataset types: `biomass_growth`, `biomass_mature`, `biomass_aging`, `biomass_decay`, `biomass_necrotic`, `sem`, `fungal`, `rust`
+## LoRA Training
+- Trigger word: `simaesthetic`
+- Dataset: 270 crops from 91 ultrawide Physarum/Boids sim frames
+- Trained: SDXL rank 16, 2500 steps, RunPod L40S ~55min
+- Best settings: LoRA 0.85-0.95, cfg 6.0, denoise 0.5-0.7
 
 ## Node ID conventions in workflows
-- `1` = CheckpointLoader, `3` = KSampler, `6` = positive prompt, `10` = input image, `12` = style ref
+- `1` = CheckpointLoader, `3` = KSampler, `6` = positive prompt, `10` = input image, `12` = style ref, `40` = LoRA
 
-## Training
+## Training configs
 - `train_config_sdxl.yaml` — ai-toolkit config, local 3080
-- `train_config_flux.yaml` — ai-toolkit config, cloud A100
+- `train_config_sdxl_runpod.yaml` — ai-toolkit config, RunPod L40S
+- `train_config_flux.yaml` — ai-toolkit config, cloud A100 (untested)
 
 ## Dependencies
 - Python 3.11+, Pillow, websocket-client

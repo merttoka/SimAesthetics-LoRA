@@ -17,11 +17,9 @@ from comfyui_client import ComfyUIClient, load_workflow, parametrize_workflow
 
 # Ported from BFL_FLUXdemos/src/experiments/emergent-worlds/prompts.ts
 DEFAULT_PROMPT = (
-    "A bioluminescent crystalline ecosystem with dense fractal dendritic branches "
-    "resembling neural pathways and river deltas. Cool blue-white luminescence pulses "
-    "through interconnected nodes. Thousands of glowing nodes pulse with soft amber "
-    "and cyan light across the organic network. Scanning electron microscope aesthetic "
-    "with false-color enhancement in ice blue and warm amber, extreme depth of field."
+    "simaesthetic, bioluminescent organic network, physarum slime mold veins "
+    "pulsing with cyan and amber glow, scanning electron microscope aesthetic, "
+    "extreme depth of field, dark background"
 )
 
 STRUCTURE_SUFFIX = (
@@ -138,9 +136,9 @@ def main():
     parser.add_argument("--host", default="http://127.0.0.1:8188", help="ComfyUI host")
     parser.add_argument("--mode", choices=["parallel", "chained"], default="parallel")
     parser.add_argument("--prompt", default=DEFAULT_PROMPT, help="Base prompt")
-    parser.add_argument("--denoise", type=float, default=0.7, help="Denoise strength")
+    parser.add_argument("--denoise", type=float, default=0.6, help="Denoise strength")
     parser.add_argument("--steps", type=int, default=30, help="Sampling steps")
-    parser.add_argument("--cfg", type=float, default=7.0, help="CFG scale")
+    parser.add_argument("--cfg", type=float, default=6.0, help="CFG scale")
     parser.add_argument("--seed", type=int, default=-1, help="Seed (-1 = random)")
     args = parser.parse_args()
 

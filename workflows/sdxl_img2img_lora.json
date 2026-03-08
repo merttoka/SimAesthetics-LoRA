@@ -1,4 +1,5 @@
 {
+  "_comment": "img2img + LoRA — best approach for sim frames. Preserves void regions, adds texture to structure only.",
   "1": {
     "class_type": "CheckpointLoaderSimple",
     "inputs": {
@@ -9,7 +10,7 @@
     "class_type": "CLIPTextEncode",
     "inputs": {
       "text": "",
-      "clip": ["1", 1]
+      "clip": ["40", 1]
     },
     "_meta": { "title": "Negative Prompt" }
   },
@@ -22,7 +23,7 @@
       "sampler_name": "dpmpp_2m_sde",
       "scheduler": "karras",
       "denoise": 0.6,
-      "model": ["1", 0],
+      "model": ["40", 0],
       "positive": ["6", 0],
       "negative": ["2", 0],
       "latent_image": ["5", 0]
@@ -45,15 +46,15 @@
   "6": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "text": "A bioluminescent crystalline ecosystem with dense fractal dendritic branches resembling neural pathways and river deltas. Cool blue-white luminescence pulses through interconnected nodes. Scanning electron microscope aesthetic with false-color enhancement in ice blue and warm amber, extreme depth of field. Match the spatial distribution of detail from the input image exactly. Areas with bright structure get rich detail and texture. Areas that are dark or empty remain as flat, untextured, uniform surfaces with no added detail.",
-      "clip": ["1", 1]
+      "text": "simaesthetic, bioluminescent organic network, physarum slime mold veins pulsing with cyan and amber glow, scanning electron microscope aesthetic, extreme depth of field, dark background",
+      "clip": ["40", 1]
     },
     "_meta": { "title": "Positive Prompt" }
   },
   "9": {
     "class_type": "SaveImage",
     "inputs": {
-      "filename_prefix": "sim_img2img",
+      "filename_prefix": "sim_img2img_lora",
       "images": ["4", 0]
     }
   },
@@ -62,6 +63,17 @@
     "inputs": {
       "image": "input.png"
     },
-    "_meta": { "title": "DLA Frame Input" }
+    "_meta": { "title": "Sim Frame Input" }
+  },
+  "40": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "lora_name": "sim_aesthetic_sdxl.safetensors",
+      "strength_model": 0.9,
+      "strength_clip": 0.9,
+      "model": ["1", 0],
+      "clip": ["1", 1]
+    },
+    "_meta": { "title": "SimAesthetic LoRA" }
   }
 }

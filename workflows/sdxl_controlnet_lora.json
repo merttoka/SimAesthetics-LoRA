@@ -1,5 +1,5 @@
 {
-  "_comment": "ControlNet + custom LoRA workflow. For use after training DLA aesthetic LoRA.",
+  "_comment": "img2img + ControlNet Canny + LoRA — structure preservation with aesthetic. Use denoise 0.5-0.7.",
   "1": {
     "class_type": "CheckpointLoaderSimple",
     "inputs": {
@@ -10,7 +10,7 @@
     "class_type": "CLIPTextEncode",
     "inputs": {
       "text": "",
-      "clip": ["1", 1]
+      "clip": ["40", 1]
     },
     "_meta": { "title": "Negative Prompt" }
   },
@@ -19,14 +19,14 @@
     "inputs": {
       "seed": 0,
       "steps": 30,
-      "cfg": 7.0,
+      "cfg": 6.0,
       "sampler_name": "dpmpp_2m_sde",
       "scheduler": "karras",
-      "denoise": 1.0,
+      "denoise": 0.6,
       "model": ["40", 0],
       "positive": ["21", 0],
       "negative": ["22", 0],
-      "latent_image": ["7", 0]
+      "latent_image": ["5", 0]
     }
   },
   "4": {
@@ -36,26 +36,25 @@
       "vae": ["1", 2]
     }
   },
+  "5": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["10", 0],
+      "vae": ["1", 2]
+    }
+  },
   "6": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "text": "dlaaesthetic, bioluminescent crystalline ecosystem with dense fractal dendritic branches. Scanning electron microscope aesthetic with false-color enhancement. Match the spatial distribution of detail from the input image exactly. Areas with bright structure get rich detail. Areas that are dark or empty remain flat, untextured.",
+      "text": "simaesthetic, bioluminescent organic network, physarum slime mold veins pulsing with cyan and amber glow, scanning electron microscope aesthetic, extreme depth of field, dark background",
       "clip": ["40", 1]
     },
     "_meta": { "title": "Positive Prompt (with LoRA trigger)" }
   },
-  "7": {
-    "class_type": "EmptyLatentImage",
-    "inputs": {
-      "width": 1024,
-      "height": 1024,
-      "batch_size": 1
-    }
-  },
   "9": {
     "class_type": "SaveImage",
     "inputs": {
-      "filename_prefix": "dla_cn_lora",
+      "filename_prefix": "sim_cn_lora",
       "images": ["4", 0]
     }
   },
@@ -64,14 +63,14 @@
     "inputs": {
       "image": "input.png"
     },
-    "_meta": { "title": "DLA Frame Input" }
+    "_meta": { "title": "Sim Frame Input" }
   },
   "15": {
     "class_type": "CannyEdgePreprocessor",
     "inputs": {
       "image": ["10", 0],
-      "low_threshold": 50,
-      "high_threshold": 200,
+      "low_threshold": 237,
+      "high_threshold": 255,
       "resolution": 1024
     }
   },
@@ -106,12 +105,12 @@
   "40": {
     "class_type": "LoraLoader",
     "inputs": {
-      "lora_name": "dla_aesthetic_sdxl.safetensors",
-      "strength_model": 0.8,
-      "strength_clip": 0.8,
+      "lora_name": "sim_aesthetic_sdxl.safetensors",
+      "strength_model": 0.9,
+      "strength_clip": 0.9,
       "model": ["1", 0],
       "clip": ["1", 1]
     },
-    "_meta": { "title": "DLA Aesthetic LoRA" }
+    "_meta": { "title": "SimAesthetic LoRA" }
   }
 }

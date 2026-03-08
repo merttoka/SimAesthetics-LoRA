@@ -54,7 +54,7 @@
   "9": {
     "class_type": "SaveImage",
     "inputs": {
-      "filename_prefix": "dla_controlnet",
+      "filename_prefix": "sim_controlnet",
       "images": ["4", 0]
     }
   },
@@ -69,8 +69,8 @@
     "class_type": "CannyEdgePreprocessor",
     "inputs": {
       "image": ["10", 0],
-      "low_threshold": 50,
-      "high_threshold": 200,
+      "low_threshold": 237,
+      "high_threshold": 255,
       "resolution": 1024
     },
     "_meta": { "title": "Canny Preprocessor" }

@@ -49,7 +49,7 @@
   "6": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "text": "biomaesthetic, bioluminescent organic structure, dense biological matter",
+      "text": "simaesthetic, bioluminescent organic structure, dense biological matter",
       "clip": ["2", 0]
     },
     "_meta": { "title": "Positive Prompt" }
@@ -65,7 +65,7 @@
   "8": {
     "class_type": "LoraLoaderModelOnly",
     "inputs": {
-      "lora_name": "dla_aesthetic_flux.safetensors",
+      "lora_name": "sim_aesthetic_flux.safetensors",
       "strength_model": 0.8,
       "model": ["1", 0]
     },

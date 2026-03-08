@@ -1,37 +1,41 @@
 # ai-toolkit LoRA training config — SDXL, local 3080 (10GB)
+# Dataset: 270 images of Physarum/Boid sim crops, 1024x1024
 # Usage: python run.py config/train_config_sdxl.yaml
+#
+# Expected training time: ~45-60 min on 3080
+# Sweet spot: likely around step 1500-2000 (check samples)
 
 job: extension
 config:
-  name: "dla_aesthetic_sdxl"
+  name: "sim_aesthetic_sdxl"
   process:
     - type: "sd_trainer"
-      training_folder: "output/dla_aesthetic_sdxl"
+      training_folder: "output/sim_aesthetic_sdxl"
       device: "cuda:0"
-      trigger_word: "dlaaesthetic"
+      trigger_word: "simaesthetic"
       network:
         type: "lora"
-        linear: 16          # rank 16 — fits 10GB VRAM
-        linear_alpha: 16
+        linear: 16          # rank 16 — good balance for 10GB VRAM
+        linear_alpha: 16    # alpha = rank is standard
       save:
         dtype: float16
-        save_every: 500
-        max_step_saves_to_keep: 3
+        save_every: 250     # checkpoint every 250 steps for eval
+        max_step_saves_to_keep: 5
       datasets:
-        - folder_path: "/path/to/datasets/dla_aesthetic"
+        - folder_path: "D:/datasets/sim_aesthetic"   # UPDATE to your Windows path
           caption_ext: "txt"
-          caption_dropout_rate: 0.05
+          caption_dropout_rate: 0.05   # 5% chance to drop caption (improves generalization)
           resolution: 1024
           is_reg: false
       train:
-        batch_size: 1
-        steps: 2000
+        batch_size: 1          # 3080 10GB limit
+        steps: 2500            # ~9 epochs over 270 images
         gradient_accumulation_steps: 1
         train_unet: true
-        train_text_encoder: false
+        train_text_encoder: false   # saves VRAM, LoRA on unet only
         gradient_checkpointing: true
         noise_scheduler: "ddpm"
-        optimizer: "adamw8bit"    # bitsandbytes 8-bit Adam
+        optimizer: "adamw8bit"      # bitsandbytes 8-bit Adam — halves optimizer VRAM
         lr: 1e-4
         lr_scheduler: "cosine"
         max_denoising_steps: 1000
@@ -40,12 +44,15 @@ config:
         is_xl: true
       sample:
         sampler: "dpmpp_2m_sde"
-        sample_every: 250
+        sample_every: 250    # generates test images at each checkpoint
         width: 1024
         height: 1024
         prompts:
-          - "dlaaesthetic, bioluminescent crystalline ecosystem, fractal dendritic branches, scanning electron microscope, ice blue and warm amber"
-          - "dlaaesthetic, neural network visualization, branching pathways, dark background, glowing nodes"
+          # Should trigger trained concept
+          - "simaesthetic, bioluminescent organic network, physarum slime mold veins, cyan and amber glow, dark background"
+          - "simaesthetic, dense cellular growth structure, branching transport network, scanning electron microscope aesthetic"
+          # Should NOT trigger (overfitting test)
+          - "a photograph of a golden retriever sitting in a park"
         neg: ""
         seed: 42
         walk_seed: true

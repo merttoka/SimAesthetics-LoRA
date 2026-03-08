@@ -13,6 +13,8 @@ Usage:
 
 import argparse
 import json
+import random
+import subprocess
 from pathlib import Path
 
 try:
@@ -49,7 +51,74 @@ DEFAULT_CAPTIONS = {
         "simaesthetic, differential growth simulation, undulating organic edges, "
         "coral-like folding membrane structures"
     ),
+    "biomass_growth": (
+        "biomaesthetic, pristine cellular growth, lush bioluminescent tissue, "
+        "stage 1 biomass, vibrant living organic matter, dense healthy cellular structure, "
+        "scanning electron microscope aesthetic"
+    ),
+    "biomass_mature": (
+        "biomaesthetic, mature biological structure, established organic network, "
+        "stage 2 biomass, complex interwoven tissue, peak biological density"
+    ),
+    "biomass_aging": (
+        "biomaesthetic, aging biological matter, early decomposition, "
+        "stage 3 biomass, fading cellular integrity, transitional organic decay"
+    ),
+    "biomass_decay": (
+        "biomaesthetic, decaying organic matter, fungal colonization, "
+        "stage 4 biomass, necrotic tissue breakdown, dissolving cellular membranes, "
+        "rot and spore formation"
+    ),
+    "biomass_necrotic": (
+        "biomaesthetic, necrotic dissolving structures, advanced decomposition, "
+        "stage 5 biomass, primordial organic dissolution, entropic biological collapse"
+    ),
+    "sem": (
+        "biomaesthetic, scanning electron microscope image, extreme magnification, "
+        "false-color enhancement, microscopic biological surface detail"
+    ),
+    "fungal": (
+        "biomaesthetic, fungal mycelium network, branching hyphae, "
+        "spore-bearing structures, bioluminescent fungal growth"
+    ),
+    "rust": (
+        "biomaesthetic, oxidized metal surface, iron rust texture, "
+        "corrosion patterns, chemical decay patina"
+    ),
 }
+
+# ── Biomass lifecycle stage definitions ──────────────────────
+
+BIOMASS_STAGES = {
+    1: "pristine, vibrant, dense cellular growth",
+    2: "mature, established, peak density",
+    3: "aging, transitional, early decay",
+    4: "decaying, necrotic, fungal colonization",
+    5: "dissolved, entropic, primordial collapse",
+}
+
+
+def interpolate_stage_caption(
+    index: int, total: int, start_stage: int, end_stage: int, trigger: str
+) -> str:
+    """Return a stage-interpolated caption based on position in sequence.
+
+    Maps index (0-based) within total images to the nearest lifecycle stage
+    between start_stage and end_stage, producing a caption with stage number.
+    """
+    if total <= 1:
+        t = 0.0
+    else:
+        t = index / (total - 1)
+
+    stage_float = start_stage + t * (end_stage - start_stage)
+    stage = round(stage_float)
+    stage = max(min(stage, 5), 1)
+
+    desc = BIOMASS_STAGES[stage]
+    return (
+        f"{trigger}, biomaesthetic, stage {stage} biomass, {desc}"
+    )
 
 
 def resize_and_crop(img: "Image.Image", size: int) -> "Image.Image":
@@ -72,6 +141,90 @@ def resize_fit(img: "Image.Image", size: int) -> "Image.Image":
     canvas = Image.new("RGB", (size, size), (0, 0, 0))
     canvas.paste(img, ((size - new_w) // 2, (size - new_h) // 2))
     return canvas
+
+
+def _mean_brightness(img: "Image.Image") -> float:
+    """Average pixel brightness (0-255) of an RGB image."""
+    gray = img.convert("L")
+    pixels = gray.getdata()
+    return sum(pixels) / len(pixels)
+
+
+def sample_regions(
+    img: "Image.Image", size: int, count: int = 3,
+    h_focus: float = 0.6, v_focus: float = 1.0,
+    min_brightness: float = 8.0, max_attempts: int = 50,
+) -> list["Image.Image"]:
+    """Sample random square crops from the focus region of a wide image.
+
+    For ultrawide sim frames (e.g. 14336x1920), focuses on the middle portion
+    of horizontal space where the sim content lives, avoiding empty edges.
+    Rejects crops that are mostly black (below min_brightness threshold).
+
+    Args:
+        img: Source image (any aspect ratio)
+        size: Output square size (e.g. 1024)
+        count: Number of crops to extract per image
+        h_focus: Fraction of horizontal center to sample from (0.3 = middle 30%)
+        v_focus: Fraction of vertical center to sample from (1.0 = full height)
+        min_brightness: Reject crops with mean brightness below this (0-255)
+        max_attempts: Max random tries before giving up on an image
+    """
+    w, h = img.size
+    crop_s = min(h, w)  # crop square can't exceed shorter dimension
+
+    # Define the focus region
+    h_margin = int(w * (1 - h_focus) / 2)
+    v_margin = int(h * (1 - v_focus) / 2)
+    # Clamp valid crop origins so the crop_s square fits within image bounds
+    x_min = h_margin
+    x_max = max(x_min, w - h_margin - crop_s)
+    y_min = v_margin
+    y_max = max(y_min, h - v_margin - crop_s)
+
+    crops = []
+    attempts = 0
+    while len(crops) < count and attempts < max_attempts:
+        x = random.randint(x_min, x_max)
+        y = random.randint(y_min, y_max)
+        cropped = img.crop((x, y, x + crop_s, y + crop_s))
+        attempts += 1
+
+        if _mean_brightness(cropped) < min_brightness:
+            continue
+
+        crops.append(cropped.resize((size, size), Image.LANCZOS))
+    return crops
+
+
+def extract_video_frames(
+    video_path: Path, output_dir: Path, interval: float = 1.0,
+    skip_start: float = 5.0,
+) -> list[Path]:
+    """Extract frames from MP4 at regular intervals using ffmpeg.
+
+    Args:
+        video_path: Path to video file
+        output_dir: Where to save extracted PNGs
+        interval: Seconds between extracted frames
+        skip_start: Skip this many seconds from the start (sim may be empty)
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        "ffmpeg", "-y",
+        "-ss", str(skip_start),
+        "-i", str(video_path),
+        "-vf", f"fps=1/{interval}",
+        str(output_dir / "vframe_%04d.png"),
+    ]
+    print(f"Extracting frames from {video_path.name} (interval={interval}s, skip={skip_start}s)...")
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"ffmpeg error: {result.stderr[-500:]}")
+        return []
+    frames = sorted(output_dir.glob("vframe_*.png"))
+    print(f"  Extracted {len(frames)} frames")
+    return frames
 
 
 class Florence2Captioner:
@@ -112,6 +265,9 @@ def process_dataset(
     caption_mode: str = "default",
     dataset_type: str = "dla",
     custom_caption: str | None = None,
+    stage_range: tuple[int, int] | None = None,
+    samples_per_image: int = 3,
+    h_focus: float = 0.6,
 ):
     """Process raw images into training-ready dataset."""
     if not HAS_PIL:
@@ -126,40 +282,59 @@ def process_dataset(
         return
 
     print(f"Processing {len(images)} images -> {output_dir}")
+    if crop_mode == "sample":
+        print(f"  Sampling {samples_per_image} crops/image, h_focus={h_focus}")
 
     captioner = None
     if caption_mode == "auto":
         print("Loading Florence-2 captioner...")
         captioner = Florence2Captioner()
 
-    resize_fn = resize_and_crop if crop_mode == "crop" else resize_fit
     manifest = []
+    img_counter = 0
 
     for i, img_path in enumerate(images):
-        idx = f"{i+1:03d}"
-        out_img = output_dir / f"img_{idx}.png"
-        out_txt = output_dir / f"img_{idx}.txt"
-
         img = Image.open(img_path).convert("RGB")
-        img = resize_fn(img, size)
-        img.save(out_img, "PNG")
 
-        # Generate caption
-        if caption_mode == "auto" and captioner:
-            caption = captioner.caption(img)
-            caption = f"{trigger}, {caption}"
-        elif custom_caption:
-            caption = f"{trigger}, {custom_caption}"
+        # Generate crops
+        if crop_mode == "sample":
+            crops = sample_regions(img, size, samples_per_image, h_focus)
+        elif crop_mode == "fit":
+            crops = [resize_fit(img, size)]
         else:
-            caption = DEFAULT_CAPTIONS.get(dataset_type, f"{trigger}, generative art visualization")
+            crops = [resize_and_crop(img, size)]
 
-        out_txt.write_text(caption)
-        manifest.append({
-            "index": idx,
-            "source": img_path.name,
-            "caption": caption,
-        })
-        print(f"  [{idx}/{len(images):03d}] {img_path.name} -> img_{idx}.png")
+        for ci, crop in enumerate(crops):
+            img_counter += 1
+            idx = f"{img_counter:03d}"
+            out_img = output_dir / f"img_{idx}.png"
+            out_txt = output_dir / f"img_{idx}.txt"
+
+            crop.save(out_img, "PNG")
+
+            # Generate caption
+            if stage_range:
+                caption = interpolate_stage_caption(
+                    i, len(images), stage_range[0], stage_range[1], trigger
+                )
+            elif caption_mode == "auto" and captioner:
+                caption = captioner.caption(crop)
+                caption = f"{trigger}, {caption}"
+            elif custom_caption:
+                caption = f"{trigger}, {custom_caption}"
+            else:
+                caption = DEFAULT_CAPTIONS.get(dataset_type, f"{trigger}, generative art visualization")
+
+            out_txt.write_text(caption)
+            manifest.append({
+                "index": idx,
+                "source": img_path.name,
+                "crop": ci if crop_mode == "sample" else None,
+                "caption": caption,
+            })
+
+        suffix = f" ({len(crops)} crops)" if crop_mode == "sample" else ""
+        print(f"  [{i+1}/{len(images)}] {img_path.name}{suffix}")
 
     # Save manifest
     manifest_path = output_dir / "manifest.json"
@@ -182,15 +357,40 @@ def main():
     parser.add_argument("--output", "-o", required=True, help="Output dataset directory")
     parser.add_argument("--trigger", "-t", required=True, help="Trigger word (e.g. dlaaesthetic)")
     parser.add_argument("--size", type=int, default=1024, help="Target resolution (default 1024)")
-    parser.add_argument("--crop", choices=["crop", "fit"], default="crop", help="Resize mode")
+    parser.add_argument("--crop", choices=["crop", "fit", "sample"], default="crop",
+                        help="Resize mode: crop (center), fit (pad), sample (random regions from wide images)")
+    parser.add_argument("--samples", type=int, default=3,
+                        help="Crops per image in sample mode (default: 3)")
+    parser.add_argument("--h-focus", type=float, default=0.6,
+                        help="Horizontal focus region for sample mode (0.6 = middle 60%%)")
     parser.add_argument("--caption", choices=["default", "auto", "custom"], default="default")
     parser.add_argument("--caption-text", help="Custom caption text (used with --caption custom)")
     parser.add_argument("--type", choices=list(DEFAULT_CAPTIONS.keys()), default="dla",
                         help="Dataset type for default captions")
+    parser.add_argument("--stage-range", help="Interpolate biomass stages across sequence (e.g. 1,5)")
+    parser.add_argument("--video", help="Extract frames from MP4 first (provide video path)")
+    parser.add_argument("--video-interval", type=float, default=1.0,
+                        help="Seconds between video frame extracts (default: 1.0)")
+    parser.add_argument("--video-skip", type=float, default=5.0,
+                        help="Skip N seconds from video start (default: 5.0)")
     args = parser.parse_args()
 
+    # If --video provided, extract frames into input dir first
+    input_dir = Path(args.input)
+    if args.video:
+        input_dir.mkdir(parents=True, exist_ok=True)
+        extract_video_frames(
+            Path(args.video), input_dir,
+            interval=args.video_interval, skip_start=args.video_skip,
+        )
+
+    stage_range = None
+    if args.stage_range:
+        parts = args.stage_range.split(",")
+        stage_range = (int(parts[0]), int(parts[1]))
+
     process_dataset(
-        input_dir=Path(args.input),
+        input_dir=input_dir,
         output_dir=Path(args.output),
         trigger=args.trigger,
         size=args.size,
@@ -198,6 +398,9 @@ def main():
         caption_mode=args.caption,
         dataset_type=args.type,
         custom_caption=args.caption_text,
+        stage_range=stage_range,
+        samples_per_image=args.samples,
+        h_focus=args.h_focus,
     )
 
 

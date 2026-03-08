@@ -22,7 +22,7 @@ config:
         save_every: 250     # checkpoint every 250 steps for eval
         max_step_saves_to_keep: 5
       datasets:
-        - folder_path: "D:/ComfyUI/datasets/sim_aesthetic"   # UPDATE to your Windows path
+        - folder_path: "D:/ComfyUI/ai-toolkit/datasets/sim_aesthetic"   # UPDATE to your Windows path
           caption_ext: "txt"
           caption_dropout_rate: 0.05   # 5% chance to drop caption (improves generalization)
           resolution: 1024

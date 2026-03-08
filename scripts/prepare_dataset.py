@@ -193,7 +193,11 @@ def sample_regions(
         if _mean_brightness(cropped) < min_brightness:
             continue
 
-        crops.append(cropped.resize((size, size), Image.LANCZOS))
+        crops.append({
+            "image": cropped.resize((size, size), Image.LANCZOS),
+            "x": x, "y": y, "crop_size": crop_s,
+            "source_w": w, "source_h": h,
+        })
     return crops
 
 
@@ -298,13 +302,14 @@ def process_dataset(
 
         # Generate crops
         if crop_mode == "sample":
-            crops = sample_regions(img, size, samples_per_image, h_focus)
+            crop_results = sample_regions(img, size, samples_per_image, h_focus)
         elif crop_mode == "fit":
-            crops = [resize_fit(img, size)]
+            crop_results = [{"image": resize_fit(img, size), "x": 0, "y": 0, "crop_size": min(img.size), "source_w": img.size[0], "source_h": img.size[1]}]
         else:
-            crops = [resize_and_crop(img, size)]
+            crop_results = [{"image": resize_and_crop(img, size), "x": 0, "y": 0, "crop_size": min(img.size), "source_w": img.size[0], "source_h": img.size[1]}]
 
-        for ci, crop in enumerate(crops):
+        for ci, crop_info in enumerate(crop_results):
+            crop = crop_info["image"]
             img_counter += 1
             idx = f"{img_counter:03d}"
             out_img = output_dir / f"img_{idx}.png"
@@ -330,10 +335,15 @@ def process_dataset(
                 "index": idx,
                 "source": img_path.name,
                 "crop": ci if crop_mode == "sample" else None,
+                "x": crop_info["x"],
+                "y": crop_info["y"],
+                "crop_size": crop_info["crop_size"],
+                "source_w": crop_info["source_w"],
+                "source_h": crop_info["source_h"],
                 "caption": caption,
             })
 
-        suffix = f" ({len(crops)} crops)" if crop_mode == "sample" else ""
+        suffix = f" ({len(crop_results)} crops)" if crop_mode == "sample" else ""
         print(f"  [{i+1}/{len(images)}] {img_path.name}{suffix}")
 
     # Save manifest

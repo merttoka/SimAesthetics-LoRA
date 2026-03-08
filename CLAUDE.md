@@ -13,6 +13,7 @@ ComfyUI + LoRA pipeline for generative simulation aesthetics. Replaces BFL API w
 - `prepare_dataset.py` — LoRA dataset prep (random crops, brightness filter, captions)
 - `make_grid.py` — side-by-side comparison grid builder
 - `pod.sh` — RunPod SSH/SCP helper
+- `overlay_composite.py` — composite AI crops back onto ultrawide frames (uses manifest coords)
 - `sweep_denoise.py` — parameter sweep with comparison grids
 - `sweep_txt2img.py` — KSampler settings sweep
 

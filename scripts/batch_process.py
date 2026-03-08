@@ -140,6 +140,7 @@ def main():
     parser.add_argument("--steps", type=int, default=30, help="Sampling steps")
     parser.add_argument("--cfg", type=float, default=6.0, help="CFG scale")
     parser.add_argument("--seed", type=int, default=-1, help="Seed (-1 = random)")
+    parser.add_argument("--limit", type=int, default=0, help="Max frames to process (0 = all)")
     args = parser.parse_args()
 
     input_dir = Path(args.input)
@@ -147,6 +148,8 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     frames = get_sorted_frames(input_dir)
+    if args.limit > 0:
+        frames = frames[:args.limit]
     if not frames:
         print(f"No image files found in {input_dir}")
         return

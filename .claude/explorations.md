@@ -17,6 +17,7 @@ Unity Edge of Chaos (Physarum/Boids) → SDXL/FLUX + LoRA + ControlNet → photo
 - Brightness filter (`min_brightness=8.0`) rejects mostly-black crops
 - 3 crops per frame → **270 training pairs**
 - Captions: `simaesthetic, physarum polycephalum slime mold network, organic branching transport network, bioluminescent veins`
+- **Crop coordinates now saved in manifest.json** (x, y, crop_size, source dimensions) for overlay compositing
 
 ### Key learning
 - Center crop on ultrawide = always same region. Random sampling with focus region = diverse views
@@ -59,8 +60,8 @@ Unity Edge of Chaos (Physarum/Boids) → SDXL/FLUX + LoRA + ControlNet → photo
 
 ### Setup
 - Model: `control-lora-canny-rank256.safetensors`
-- Preprocessor: `CannyEdgePreprocessor` (low=100, high=200, resolution=1024)
-- Applied via `Apply ControlNet` node, strength 0.7
+- Preprocessor: `CannyEdgePreprocessor` (low=237, high=255, resolution=1024)
+- Applied via `ControlNetApplyAdvanced` node, strength 0.8
 
 ### Observation: Canny + sim frames is redundant
 Sim frames are already edges/lines on black. Canny edge extraction → regeneration produces near-identical output. Round-tripping structure through ControlNet doesn't add value when the source IS edges.
@@ -81,54 +82,89 @@ Load Image → VAE Encode → KSampler (denoise 0.5-0.7)
 ### Key insight
 This reframes the pipeline: the diffusion model is a **selective texture synthesizer** respecting the sim's spatial logic. Dark = void = entropy. Bright = structure = life. The model only "grows" where the algorithm says there's life.
 
-### Other approaches to explore
-- **Inpainting**: use sim frame luminance as mask → only regenerate bright regions
-- **Post-composite**: generate fully, then mask-blend back onto black using original luminance
-- **Depth ControlNet**: better for organic volumetric content than Canny (edges vs spatial relationships)
+---
+
+## 4. Parameter Insights (Tested)
+
+### Best SDXL settings for sim frames
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| LoRA strength | 0.85-0.95 | Below 0.8 = barely visible. Above 1.0 = artifacts |
+| cfg | 6.0 | 7.0 works but 6.0 gives more natural results |
+| denoise | 0.5-0.7 | **The key knob.** 0.5 = subtle enhancement. 0.7 = heavy reimagining. Both preserve void |
+| Canny low/high | 237/255 | High thresholds because sim frames are bright-on-black — low thresholds pick up noise |
+| ControlNet strength | 0.7-0.8 | Higher = more structural fidelity, less creative freedom |
+| sampler | dpmpp_2m_sde | karras scheduler |
+| steps | 30 | Diminishing returns past 30 |
+
+### img2img vs ControlNet for sim frames
+- **img2img alone** (denoise 0.6): best void preservation, good texture. **Use this as default**
+- **img2img + ControlNet**: tighter structure lock. Use when denoise is high and output drifts from input layout
+- **ControlNet alone (txt2img)**: fills void regions. Not ideal for sim aesthetic
+- **ControlNet Canny on sim frames**: redundant — sim IS edges. Depth ControlNet may be better (untested)
+
+### Trigger word behavior
+- `simaesthetic` alone: weak activation. Needs full descriptive prompt alongside
+- `simaesthetic` + full caption + LoRA 0.9: strong activation
+- Higher `caption_dropout_rate` (0.10-0.15) would fix this in retraining
 
 ---
 
-## 4. Interesting Prompt Directions
+## 5. Workflow Architecture
 
-### Sim frame + non-sim prompts (ControlNet structure transfer)
-- `underwater coral reef, photorealistic, macro photography` → sim veins become coral
-- `aerial city at night, glowing streets, cyberpunk` → sim network becomes streets
-- `photorealistic SEM image, fungal mycelium, dense biological tissue` → Gemini's biomass proposal
+### Available workflows (API + UI format)
+| Workflow | Purpose | Status |
+|----------|---------|--------|
+| `sdxl_img2img_lora` | img2img + LoRA — **primary workflow** | Tested, working |
+| `sdxl_controlnet_lora` | img2img + Canny ControlNet + LoRA | Tested, working |
+| `sdxl_img2img` | img2img baseline (no LoRA) | Working |
+| `sdxl_controlnet_canny` | ControlNet only (no LoRA) | Working |
+| `sdxl_controlnet_ipa` | ControlNet + IPAdapter (style ref chaining) | Untested |
+| `flux_controlnet_depth_lora` | FLUX + Depth CN + LoRA | Untested (needs A100) |
 
-### Real photo + LoRA (style transfer)
-- Any photo + `simaesthetic` trigger + LoRA → rendered in sim aesthetic
-- Dog photo gets organic/bioluminescent background treatment
-
----
-
-## 5. Pipeline Architecture
-
+### Pipeline flow
 ```
                                     ┌─ LoRA (learned aesthetic)
                                     │
 Sim Frame ──→ VAE Encode ──→ KSampler ──→ VAE Decode ──→ Output
     │                          ↑
-    └──→ Canny/Depth ──→ ControlNet (structure preservation)
+    └──→ Canny/Depth ──→ ControlNet (optional structure lock)
 
-    Denoise 0.5-0.7: reimagine with structure
-    LoRA strength 0.85-0.95: aesthetic intensity
-    ControlNet strength 0.5-0.9: structural fidelity
+batch_process.py → runs N frames through ComfyUI API
+overlay_composite.py → pastes AI crops back onto ultrawide frames
+make_grid.py → side-by-side comparison grids
 ```
 
 ---
 
-## 6. Interview Talking Points Developed
+## 6. Batch Processing Infrastructure
+
+### Scripts
+- `batch_process.py`: sends frames to ComfyUI over LAN, saves outputs locally. Supports `--limit`, `--denoise`, `--cfg`, `--seed`, parallel/chained modes
+- `make_grid.py`: side-by-side grids from pairs or directories
+- `overlay_composite.py`: composites AI crops back onto ultrawide source frames using manifest coordinates. Supports `--side-by-side` and `--opacity`
+- `pod.sh`: RunPod SSH/SCP helper for training
+
+### Overlay video pipeline
+1. `prepare_dataset.py` saves crop coordinates in manifest.json
+2. `batch_process.py` generates AI outputs
+3. `overlay_composite.py` pastes AI crops back at original coordinates on ultrawide frames
+4. `ffmpeg` encodes to video
+
+---
+
+## 7. Interview Talking Points
 
 ### What I built
-- End-to-end pipeline: Unity GPU sim → dataset prep → LoRA training → ComfyUI inference
-- Automated tooling: frame extraction, smart cropping, lifecycle captioning, texture scraping
-- FLUX workflow (untested due to VRAM limits) + SDXL workflow (working)
+- End-to-end pipeline: Unity GPU sim → dataset prep → LoRA training → ComfyUI inference → overlay compositing
+- Automated tooling: smart cropping with coordinate tracking, batch processing, comparison grids, overlay video
+- SDXL LoRA trained on RunPod L40S (~55 min)
 
 ### What I learned
-- LoRA trigger word binding requires aggressive caption dropout
+- LoRA trigger word binding requires aggressive caption dropout (0.05 too low, need 0.15)
 - ControlNet is redundant when source images ARE the edge structure
-- img2img with controlled denoise is more useful than txt2img+ControlNet for sim frames
-- The model as selective texture synthesizer (respecting sim spatial logic) is the compelling framing
+- img2img with controlled denoise is the core technique — model as selective texture synthesizer
+- Dark = void = entropy. The model only "grows" where the algorithm says there's life
 
 ### Advanced concepts to discuss
 - **Latent decay**: spatially varying the ODE solver halt point using sim dead-cell masks
@@ -138,12 +174,44 @@ Sim Frame ──→ VAE Encode ──→ KSampler ──→ VAE Decode ──→
 
 ---
 
-## 7. Unresolved / Next Steps
+## 8. FLUX LoRA Training — Should We?
 
-- [ ] FLUX LoRA training (needs A100 80GB)
-- [ ] img2img + ControlNet combo (denoise as reimagine knob)
-- [ ] Inpainting approach (mask from sim luminance)
+### Pros
+- FLUX produces significantly higher quality/coherence than SDXL
+- Flow matching (FLUX) vs DDPM (SDXL) — better for fine detail
+- T5 text encoder understands complex prompts better — trigger word may bind more naturally
+- BFL interview — demonstrating FLUX mastery is directly relevant
+
+### Cons
+- Needs A100 80GB (~$2-3/hr on RunPod). FLUX loads fp32 before quantizing
+- No trained FLUX LoRA yet — would need to re-prep dataset (or reuse same 270 images)
+- ControlNet ecosystem for FLUX is less mature than SDXL
+- Current SDXL results already look good
+
+### Recommendation
+**Yes, train FLUX** if time permits. Use same 270-image dataset. Key changes:
+- `caption_dropout_rate: 0.15` (fix trigger word binding)
+- `noise_scheduler: flowmatch` (not ddpm)
+- `guidance_scale: 3.5` (FLUX uses lower cfg)
+- RunPod A100 80GB, estimate ~1-2 hrs
+- Compare FLUX vs SDXL outputs in grid — strong interview artifact
+
+### If no time for FLUX training
+Focus on maximizing SDXL output quality:
+- Retrain SDXL with `caption_dropout_rate: 0.15` for stronger trigger
+- Generate more diverse outputs (different prompts, denoise values)
+- Build rich comparison grid + overlay video
+
+---
+
+## 9. Unresolved / Next Steps
+
+- [ ] FLUX LoRA training (A100 80GB, ~$2-3/hr)
+- [ ] Retrain SDXL with `caption_dropout_rate: 0.15`
+- [x] ~~Batch process comparison grid~~ → batch_process.py + make_grid.py working
+- [x] ~~Crop coordinate tracking~~ → manifest.json now saves x/y/crop_size
+- [ ] Overlay composite video (overlay_composite.py ready, needs re-prepped dataset with coords)
 - [ ] Depth ControlNet vs Canny for organic content
-- [ ] Higher caption_dropout_rate training run
-- [ ] Batch process comparison grid for interview artifact
-- [ ] Side-by-side video: raw sim | AI-rendered
+- [ ] IPAdapter chained mode (style continuity across frames)
+- [ ] Non-sim prompts: coral reef, aerial city, mycelium over sim structure
+- [ ] Try inpainting approach (luminance mask → only regenerate bright regions)

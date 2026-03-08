@@ -1,0 +1,58 @@
+# ai-toolkit LoRA training config — SDXL, RunPod L40S/A100
+# Dataset: 270 images of Physarum/Boid sim crops, 1024x1024
+# Usage: python run.py /workspace/train_config_sdxl_runpod.yaml
+#
+# Expected: ~15 min on L40S/A100
+# Note: set HF_HOME=/workspace/.cache/huggingface before running
+
+job: extension
+config:
+  name: "sim_aesthetic_sdxl"
+  process:
+    - type: "sd_trainer"
+      training_folder: "/workspace/output/sim_aesthetic_sdxl"
+      device: "cuda:0"
+      trigger_word: "simaesthetic"
+      network:
+        type: "lora"
+        linear: 16
+        linear_alpha: 16
+      save:
+        dtype: float16
+        save_every: 250
+        max_step_saves_to_keep: 5
+      datasets:
+        - folder_path: "/workspace/datasets/sim_aesthetic"
+          caption_ext: "txt"
+          caption_dropout_rate: 0.05
+          resolution: 1024
+          is_reg: false
+      train:
+        batch_size: 1
+        steps: 2500
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        noise_scheduler: "ddpm"
+        optimizer: "adamw8bit"
+        lr: 1e-4
+        lr_scheduler: "cosine"
+        max_denoising_steps: 1000
+      model:
+        name_or_path: "stabilityai/stable-diffusion-xl-base-1.0"
+        is_xl: true
+      sample:
+        sampler: "ddpm"
+        sample_every: 250
+        width: 1024
+        height: 1024
+        prompts:
+          - "simaesthetic, bioluminescent organic network, physarum slime mold veins, cyan and amber glow, dark background"
+          - "simaesthetic, dense cellular growth structure, branching transport network, scanning electron microscope aesthetic"
+          - "a photograph of a golden retriever sitting in a park"
+        neg: ""
+        seed: 42
+        walk_seed: true
+        guidance_scale: 7.0
+        sample_steps: 20

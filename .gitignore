@@ -2,7 +2,7 @@
 __pycache__/
 *.pyc
 .DS_Store
-datasets/raw/
+datasets/
 outputs/
 loras/*.safetensors
 *.ckpt

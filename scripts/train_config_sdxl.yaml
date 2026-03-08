@@ -40,13 +40,13 @@ config:
         lr_scheduler: "cosine"
         max_denoising_steps: 1000
       model:
-        name_or_path: "D:/ComfyUI/models/checkpoints/stable-diffusion-xl-base-1.0"
+        name_or_path: "D:/ComfyUI/models/checkpoints/sd_xl_base_1.0.safetensors"
         is_xl: true
       sample:
-        sampler: "dpmpp_2m_sde"
-        sample_every: 250    # generates test images at each checkpoint
-        width: 1024
-        height: 1024
+        sampler: "ddpm"
+        sample_every: 99999    # generates test images at each checkpoint
+        width: 768
+        height: 768
         prompts:
           # Should trigger trained concept
           - "simaesthetic, bioluminescent organic network, physarum slime mold veins, cyan and amber glow, dark background"
@@ -57,4 +57,4 @@ config:
         seed: 42
         walk_seed: true
         guidance_scale: 7.0
-        sample_steps: 30
+        sample_steps: 10

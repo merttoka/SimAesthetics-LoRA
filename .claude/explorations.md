@@ -277,15 +277,15 @@ Running simultaneously on separate RunPod pods:
 - [x] Denoise sweep on sim_aesthetic_2 — 0.76 optimal for dense frames
 - [x] Workflows updated to v2 LoRA
 
-### In progress
-- [~] FLUX LoRA training — A100 80GB, ~10hrs, running
-
 ### Done (this session)
 - [x] Batch run on sim_aesthetic_2 with v2 LoRA, denoise 0.76, lora-strength 0.35
 - [x] 2D sweep: LoRA strength × ControlNet strength matrix
 - [x] Timelapse grids from sim_aesthetic_2 v2 batch
 - [x] Overlay composite frames (side-by-side + variations mode)
 - [x] `flux_sample.py` — diffusers-based FLUX inference script (no ComfyUI needed)
+
+### In progress
+- [~] FLUX LoRA training — A100 80GB, ~10hrs, running
 
 ### To do
 - [ ] Download + test FLUX checkpoints when training completes

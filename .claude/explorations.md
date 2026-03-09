@@ -182,27 +182,6 @@ make_grid.py → side-by-side comparison grids
 
 ---
 
-## 7. Interview Talking Points
-
-### What I built
-- End-to-end pipeline: Unity GPU sim → dataset prep → LoRA training → ComfyUI inference → overlay compositing
-- Automated tooling: smart cropping with coordinate tracking, batch processing, comparison grids, overlay video
-- SDXL LoRA trained on RunPod L40S (~55 min)
-
-### What I learned
-- LoRA trigger word binding requires aggressive caption dropout (0.05 too low, need 0.15)
-- ControlNet is redundant when source images ARE the edge structure
-- img2img with controlled denoise is the core technique — model as selective texture synthesizer
-- Dark = void = entropy. The model only "grows" where the algorithm says there's life
-
-### Advanced concepts to discuss
-- **Latent decay**: spatially varying the ODE solver halt point using sim dead-cell masks
-- **Multi-LoRA routing**: sim output masks route between growth/decay LoRAs spatially
-- **Vector field flow matching**: injecting sim velocity fields into FLUX initial noise distribution
-- **Satellite data as ControlNet**: real ecological change-detection rasters as structural input
-
----
-
 ## 8. Training Round 2 — FLUX + SDXL Retrain (In Progress)
 
 ### What changed from v1

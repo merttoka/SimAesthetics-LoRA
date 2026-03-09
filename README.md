@@ -23,8 +23,8 @@ Unity Edge of Chaos (Physarum + Boids)
          │
          ▼
     ai-toolkit LoRA training
-    ├── SDXL rank 16 (RunPod A40 ~55min)
-    ├── FLUX rank 16 (RunPod A100 ~1-2hr)
+    ├── SDXL rank 16 (RunPod L40S ~55min)
+    ├── FLUX rank 16 (RunPod A100 ~10hr)
     ├── trigger: "simaesthetic"
     └── caption_dropout: 0.15
          │
@@ -104,7 +104,7 @@ UI-format versions for drag-and-drop: `ui_sdxl_img2img_lora.json`, `ui_sdxl_cont
 
 - **img2img > txt2img**: VAE Encode + denoise 0.5-0.7 preserves void. txt2img fills everything
 - **Canny ControlNet redundant on sim frames**: sim IS edges. Round-tripping adds nothing
-- **Denoise is content-dependent**: sparse frames → 0.6, dense frames → 0.8-0.9
+- **Denoise is content-dependent**: sparse frames → 0.6, dense frames → 0.76
 - **Trigger word needs aggressive caption dropout**: 0.05 too low, retrained with 0.15
 - **LoRA strength sweet spot**: 0.85-0.95. Below 0.8 barely visible, above 1.0 artifacts
 
@@ -112,17 +112,17 @@ UI-format versions for drag-and-drop: `ui_sdxl_img2img_lora.json`, `ui_sdxl_cont
 
 | Config | Target | Hardware | Time | Status |
 |--------|--------|----------|------|--------|
-| `train_config_sdxl_runpod.yaml` | SDXL v2 rank 16 | RunPod A40 48GB | ~55min | Trained |
-| `train_config_flux.yaml` | FLUX rank 16 | RunPod A100 80GB | ~1-2hr | Training |
-| `train_config_sdxl.yaml` | SDXL rank 16 | Local 3080 | ~80hr | v1 done |
+| `train_config_sdxl_runpod.yaml` | SDXL v2 rank 16 | RunPod L40S 48GB | ~55min | Trained |
+| `train_config_flux.yaml` | FLUX rank 16 | RunPod A100 80GB | ~10hr | Training |
+| `train_config_sdxl.yaml` | SDXL v1 rank 16 | Local 3080 10GB | ~80hr | v1 done |
 
 ## Hardware
 
-| Task | 3080 (10GB) | RunPod A40 | RunPod A100 | Mac |
-|------|-------------|------------|-------------|-----|
+| Task | 3080 (10GB) | RunPod L40S 48GB | RunPod A100 80GB | Mac |
+|------|-------------|------------------|------------------|-----|
 | SDXL img2img | 1024px | — | — | — |
 | SDXL LoRA training | ~80hr | ~55min | — | — |
-| FLUX LoRA training | OOM | OOM (48GB) | ~1-2hr | — |
+| FLUX LoRA training | OOM | OOM | ~10hr | — |
 | Dataset prep / scripting | — | — | — | Yes |
 
 ## Dependencies

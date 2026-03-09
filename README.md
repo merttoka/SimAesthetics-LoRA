@@ -1,6 +1,6 @@
 # SimAesthetics-LoRA
 
-End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → ComfyUI img2img → photorealistic biological matter. Built with [Unity Edge of Chaos](https://github.com/merttoka/UNITY_EoC_GPU) simulation frames.
+End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → ComfyUI img2img → photorealistic biological matter. Built with Unity Edge of Chaos simulation frames.
 
 ### Simulation → AI Rendered (sparse frames)
 ![Timelapse grid — sparse frames](docs/grid-timelapse-sparse.png)

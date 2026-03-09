@@ -14,8 +14,10 @@ ComfyUI + LoRA pipeline for generative simulation aesthetics. Replaces BFL API w
 - `make_grid.py` — side-by-side comparison grid builder
 - `pod.sh` — RunPod SSH/SCP helper
 - `overlay_composite.py` — composite AI crops back onto ultrawide frames (uses manifest coords)
-- `sweep_denoise.py` — parameter sweep with comparison grids
-- `sweep_txt2img.py` — KSampler settings sweep
+- `sweep_denoise.py` — parameter sweep with comparison grids (1D/2D, ComfyUI)
+- `sweep_txt2img.py` — KSampler settings sweep (ComfyUI)
+- `flux_sample.py` — FLUX LoRA inference: txt2img, img2img, batch directory
+- `flux_sweep.py` — FLUX parameter sweeps (denoise, LoRA strength, steps)
 
 ## Workflows (ComfyUI API format JSON)
 - `sdxl_img2img.json` — basic img2img (no LoRA, baseline)

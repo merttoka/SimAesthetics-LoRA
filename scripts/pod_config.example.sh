@@ -1,8 +1,7 @@
-declare -A POD_IPS POD_PORTS POD_JOBS
-POD_IPS[flux]="<flux-pod-ip>"
-POD_PORTS[flux]="<flux-pod-port>"
-POD_JOBS[flux]="sim_aesthetic_flux"
+FLUX_IP="<flux-pod-ip>"
+FLUX_PORT="<flux-pod-port>"
+FLUX_JOB="sim_aesthetic_flux"
 
-POD_IPS[sdxl]="<sdxl-pod-ip>"
-POD_PORTS[sdxl]="<sdxl-pod-port>"
-POD_JOBS[sdxl]="sim_aesthetic_sdxl_v2"
+SDXL_IP="<sdxl-pod-ip>"
+SDXL_PORT="<sdxl-pod-port>"
+SDXL_JOB="sim_aesthetic_sdxl_v2"

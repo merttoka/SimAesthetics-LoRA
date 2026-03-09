@@ -7,7 +7,6 @@
 #   ./pod.sh sdxl loras                    # Download sdxl LoRA checkpoints
 
 # ── Pod configs ───────────────────────────────
-# Load from pod_config.sh (gitignored) or set defaults
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [[ -f "$SCRIPT_DIR/pod_config.sh" ]]; then
   source "$SCRIPT_DIR/pod_config.sh"
@@ -21,26 +20,28 @@ POD="$1"
 CMD="$2"
 shift 2 2>/dev/null
 
-if [[ -z "${POD_IPS[$POD]}" ]]; then
-  echo "Usage: ./pod.sh <flux|sdxl> <command> [args...]"
-  echo ""
-  echo "Pods:"
-  echo "  flux   FLUX training (A100 80GB)"
-  echo "  sdxl   SDXL retrain (A40 48GB)"
-  echo ""
-  echo "Commands:"
-  echo "  connect                    SSH into pod"
-  echo "  upload <local> <remote>    Upload to pod"
-  echo "  download <remote> <local>  Download from pod"
-  echo "  loras [job]                Download LoRA checkpoints"
-  echo "  samples [job]              Download training samples"
-  echo "  stop                       Stop the pod"
-  exit 1
-fi
+# Resolve pod name to config vars
+case "$POD" in
+  flux) IP="$FLUX_IP"; PORT="$FLUX_PORT"; JOB="$FLUX_JOB" ;;
+  sdxl) IP="$SDXL_IP"; PORT="$SDXL_PORT"; JOB="$SDXL_JOB" ;;
+  *)
+    echo "Usage: ./pod.sh <flux|sdxl> <command> [args...]"
+    echo ""
+    echo "Pods:"
+    echo "  flux   FLUX training (A100 80GB)"
+    echo "  sdxl   SDXL retrain (A40 48GB)"
+    echo ""
+    echo "Commands:"
+    echo "  connect                    SSH into pod"
+    echo "  upload <local> <remote>    Upload to pod"
+    echo "  download <remote> <local>  Download from pod"
+    echo "  loras [job]                Download LoRA checkpoints"
+    echo "  samples [job]              Download training samples"
+    echo "  stop                       Stop the pod"
+    exit 1
+    ;;
+esac
 
-IP="${POD_IPS[$POD]}"
-PORT="${POD_PORTS[$POD]}"
-JOB="${POD_JOBS[$POD]}"
 SCP_OPTS="-o StrictHostKeyChecking=no -P $PORT"
 SSH_OPTS="-o StrictHostKeyChecking=no -p $PORT"
 

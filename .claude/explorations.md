@@ -258,6 +258,16 @@ Running simultaneously on separate RunPod pods:
 - Had to fix: PyTorch 2.4→2.6 (enable_gqa), torchaudio ABI mismatch, disable sample gen (tokenizer crash on neg prompt)
 - Checkpoints saving every 500 steps
 - Cost: ~$12 at $1.22/hr spot
+- Training completed successfully, 6 checkpoints + final (165MB each)
+
+### FLUX img2img results
+- Used `flux_sample.py` (diffusers-based, no ComfyUI) on A100 pod
+- **Best params**: denoise 0.7, lora-strength 0.35, cfg 3.5, steps 28
+- Prompt: `simaesthetic, bioluminescent organic network, physarum slime mold veins, cyan and amber glow, dark background`
+- Results look very good — distinct from SDXL, more photorealistic detail
+- FLUX vs SDXL comparison grid at `outputs/grid_flux_vs_sdxl.png`
+- **FLUX can't run on 3080 (10GB)** — must use A100 pod or cloud for inference
+- ~15s per image on A100, ~$1.35 for 270 images
 
 ---
 
@@ -284,13 +294,11 @@ Running simultaneously on separate RunPod pods:
 - [x] Overlay composite frames (side-by-side + variations mode)
 - [x] `flux_sample.py` — diffusers-based FLUX inference script (no ComfyUI needed)
 
-### In progress
-- [~] FLUX LoRA training — A100 80GB, ~10hrs, running
-
-### To do
-- [ ] Download + test FLUX checkpoints when training completes
-- [ ] Generate FLUX samples on A100 pod via `flux_sample.py`
-- [ ] Compare FLUX vs SDXL v2 outputs in grid
+### Done (FLUX)
+- [x] FLUX LoRA training — A100 80GB, ~10hrs, 2500 steps complete
+- [x] Download FLUX checkpoints (6 + final, 165MB each)
+- [x] Generate FLUX txt2img + img2img samples via `flux_sample.py` on A100
+- [x] FLUX vs SDXL v2 comparison grid (`outputs/grid_flux_vs_sdxl.png`)
 
 ### Nice to have
 - [ ] Depth ControlNet vs Canny for organic content

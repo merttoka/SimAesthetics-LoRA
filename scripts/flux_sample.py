@@ -3,21 +3,24 @@
 Runs directly on GPU — no ComfyUI needed. Designed for RunPod A100.
 
 Usage:
-    # Basic (uses defaults)
+    # txt2img with default prompts
     python flux_sample.py
 
+    # img2img single frame
+    python flux_sample.py -i frame.png --denoise 0.7 --lora-strength 0.35
+
+    # img2img batch (directory of frames)
+    python flux_sample.py -i datasets/sim_aesthetic_2/ --denoise 0.7 --lora-strength 0.35
+
     # Custom LoRA + output
-    python flux_sample.py --lora /workspace/output/.../my_lora.safetensors \
-        --output /workspace/samples/ --lora-strength 0.8
+    python flux_sample.py --lora /path/to/lora.safetensors -o /workspace/samples/
 
-    # img2img mode
-    python flux_sample.py --input frame.png --denoise 0.7
-
-    # Custom prompts
+    # Custom prompts (txt2img)
     python flux_sample.py --prompts "simaesthetic, coral reef" "simaesthetic, mycelium network"
 """
 
 import argparse
+import time
 from pathlib import Path
 
 import torch
@@ -44,7 +47,8 @@ def main():
     parser.add_argument("--lora", default=None, help="Path to LoRA safetensors (auto-detects if omitted)")
     parser.add_argument("--lora-strength", type=float, default=0.9, help="LoRA strength")
     parser.add_argument("--output", "-o", default="/workspace/flux_samples", help="Output directory")
-    parser.add_argument("--input", "-i", default=None, help="Input image for img2img mode")
+    parser.add_argument("--input", "-i", default=None,
+                        help="Input image or directory of images for img2img mode")
     parser.add_argument("--denoise", type=float, default=0.7, help="Denoise strength for img2img")
     parser.add_argument("--prompts", nargs="+", default=None, help="Custom prompts")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
@@ -66,7 +70,9 @@ def main():
     ]
     prompts = args.prompts or default_prompts
 
-    is_img2img = args.input is not None
+    input_path = Path(args.input) if args.input else None
+    is_img2img = input_path is not None
+    is_batch = is_img2img and input_path.is_dir()
 
     # Load pipeline
     print("Loading FLUX pipeline...")
@@ -88,45 +94,70 @@ def main():
     pipe.to("cuda")
     print("Pipeline ready")
 
-    # Load input image for img2img
-    input_image = None
-    if is_img2img:
-        input_image = Image.open(args.input).convert("RGB").resize((args.width, args.height))
-        print(f"img2img mode: {args.input}, denoise={args.denoise}")
+    lora_kwargs = {}
+    if not args.no_lora:
+        lora_kwargs["joint_attention_kwargs"] = {"scale": args.lora_strength}
 
-    # Generate
-    generator = torch.Generator("cuda").manual_seed(args.seed)
+    if is_batch:
+        # Batch img2img: process all images in directory
+        frames = sorted(input_path.glob("*.png"))
+        print(f"Batch img2img: {len(frames)} frames, denoise={args.denoise}")
+        prompt = prompts[0]
+        t0 = time.time()
 
-    for i, prompt in enumerate(prompts):
-        print(f"  [{i+1}/{len(prompts)}] {prompt[:60]}...")
-
-        if is_img2img:
+        for i, f in enumerate(frames):
+            img = Image.open(f).convert("RGB").resize((args.width, args.height))
+            gen = torch.Generator("cuda").manual_seed(args.seed)
             result = pipe(
-                prompt=prompt,
-                image=input_image,
-                strength=args.denoise,
-                guidance_scale=args.cfg,
-                num_inference_steps=args.steps,
-                generator=generator,
+                prompt=prompt, image=img, strength=args.denoise,
+                guidance_scale=args.cfg, num_inference_steps=args.steps,
+                generator=gen, **lora_kwargs,
             ).images[0]
-        else:
-            kwargs = dict(
-                prompt=prompt,
-                guidance_scale=args.cfg,
+            out_path = output_dir / f"ai_{f.name}"
+            result.save(out_path)
+            elapsed = time.time() - t0
+            per_img = elapsed / (i + 1)
+            remaining = per_img * (len(frames) - i - 1)
+            print(f"  [{i+1}/{len(frames)}] {out_path.name} "
+                  f"({per_img:.1f}s/img, ~{remaining/60:.0f}min left)")
+
+        print(f"\nDone: {len(frames)} frames in {(time.time()-t0)/60:.1f} min")
+
+    elif is_img2img:
+        # Single img2img
+        input_image = Image.open(input_path).convert("RGB").resize((args.width, args.height))
+        print(f"img2img: {input_path}, denoise={args.denoise}")
+
+        for i, prompt in enumerate(prompts):
+            print(f"  [{i+1}/{len(prompts)}] {prompt[:60]}...")
+            gen = torch.Generator("cuda").manual_seed(args.seed)
+            result = pipe(
+                prompt=prompt, image=input_image, strength=args.denoise,
+                guidance_scale=args.cfg, num_inference_steps=args.steps,
+                generator=gen, **lora_kwargs,
+            ).images[0]
+            out_path = output_dir / f"flux_img2img_{i:03d}.png"
+            result.save(out_path)
+            print(f"    Saved: {out_path}")
+
+        print(f"\nDone: {len(prompts)} samples in {output_dir}")
+
+    else:
+        # txt2img
+        for i, prompt in enumerate(prompts):
+            print(f"  [{i+1}/{len(prompts)}] {prompt[:60]}...")
+            gen = torch.Generator("cuda").manual_seed(args.seed)
+            result = pipe(
+                prompt=prompt, guidance_scale=args.cfg,
                 num_inference_steps=args.steps,
-                width=args.width,
-                height=args.height,
-                generator=generator,
-            )
-            if not args.no_lora:
-                kwargs["joint_attention_kwargs"] = {"scale": args.lora_strength}
-            result = pipe(**kwargs).images[0]
+                width=args.width, height=args.height,
+                generator=gen, **lora_kwargs,
+            ).images[0]
+            out_path = output_dir / f"flux_sample_{i:03d}.png"
+            result.save(out_path)
+            print(f"    Saved: {out_path}")
 
-        out_path = output_dir / f"flux_sample_{i:03d}.png"
-        result.save(out_path)
-        print(f"    Saved: {out_path}")
-
-    print(f"\nDone: {len(prompts)} samples in {output_dir}")
+        print(f"\nDone: {len(prompts)} samples in {output_dir}")
 
 
 if __name__ == "__main__":

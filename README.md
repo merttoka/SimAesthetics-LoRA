@@ -105,7 +105,8 @@ python scripts/overlay_composite.py \
 | `sweep_denoise.py`     | Parameter sweep: 1D or 2D matrix, fixed seed, labeled grid     |
 | `make_grid.py`         | Comparison grids. `--timelapse`, `--count`/`--iter`, auto-wrap |
 | `overlay_composite.py` | Composite AI onto ultrawides. `--side-by-side`, `--h-crop`, `--variations` |
-| `flux_sample.py`       | FLUX LoRA inference via diffusers (txt2img + img2img)          |
+| `flux_sample.py`       | FLUX LoRA inference via diffusers (txt2img, img2img, batch)    |
+| `flux_sweep.py`        | FLUX parameter sweeps (denoise, LoRA, steps) with labeled grids |
 | `comfyui_client.py`    | ComfyUI HTTP/WebSocket API client                              |
 | `pod.sh`               | RunPod SSH/SCP helper (`./pod.sh <flux|sdxl> <command>`)       |
 

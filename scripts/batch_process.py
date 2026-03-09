@@ -141,6 +141,7 @@ def main():
     parser.add_argument("--cfg", type=float, default=6.0, help="CFG scale")
     parser.add_argument("--seed", type=int, default=-1, help="Seed (-1 = random)")
     parser.add_argument("--limit", type=int, default=0, help="Max frames to process (0 = all)")
+    parser.add_argument("--lora-strength", type=float, default=None, help="LoRA model strength (node 40)")
     args = parser.parse_args()
 
     input_dir = Path(args.input)
@@ -165,6 +166,9 @@ def main():
         "3.cfg": args.cfg,
         "3.denoise": args.denoise,
     }
+    if args.lora_strength is not None:
+        params["40.strength_model"] = args.lora_strength
+        params["40.strength_clip"] = args.lora_strength
 
     process_fn = process_chained if args.mode == "chained" else process_parallel
     start = time.time()

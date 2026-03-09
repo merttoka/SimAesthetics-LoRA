@@ -1,7 +1,7 @@
 # SimAesthetics Explorations Log
 
 ## Context
-BFL Creative Technologist interview prep. Building ALife sim → generative AI pipeline.
+ALife sim → generative AI pipeline. Exploring LoRA fine-tuning and img2img workflows for simulation aesthetics.
 Unity Edge of Chaos (Physarum/Boids) → SDXL/FLUX + LoRA + ControlNet → photorealistic biological matter.
 
 ---
@@ -89,13 +89,21 @@ This reframes the pipeline: the diffusion model is a **selective texture synthes
 ### Best SDXL settings for sim frames
 | Parameter | Value | Notes |
 |-----------|-------|-------|
-| LoRA strength | 0.85-0.95 | Below 0.8 = barely visible. Above 1.0 = artifacts |
+| LoRA strength | **0.3-0.4** (creative) or 0.85-0.95 (faithful) | See "LoRA as creativity dial" below |
 | cfg | 6.0 | 7.0 works but 6.0 gives more natural results |
-| denoise | 0.5-0.7 | **The key knob.** 0.5 = subtle enhancement. 0.7 = heavy reimagining. Both preserve void |
+| denoise | 0.5-0.7 (sparse) or 0.76 (dense) | Content-dependent — see below |
 | Canny low/high | 237/255 | High thresholds because sim frames are bright-on-black — low thresholds pick up noise |
 | ControlNet strength | 0.7-0.8 | Higher = more structural fidelity, less creative freedom |
 | sampler | dpmpp_2m_sde | karras scheduler |
 | steps | 30 | Diminishing returns past 30 |
+
+### LoRA strength as a creativity dial
+- **Big insight**: LoRA training doesn't produce a fixed output — it creates a **continuous aesthetic axis**
+- **Low strength (0.3-0.4)**: SDXL reimagines freely, LoRA provides subtle guidance. More creative, more surprising results. Organic textures that don't look like the training data
+- **High strength (0.85-0.95)**: output closely matches training data aesthetic. Faithful physarum reproduction
+- The v1 batch (weak trigger binding at caption_dropout 0.05) accidentally produced a low-strength-like effect — outputs looked creative and surprising
+- v2 (caption_dropout 0.15) + strength 0.35 reproduces that same creative look intentionally
+- **LoRA strength is the primary creative knob** — more important than denoise for controlling output character
 
 ### img2img vs ControlNet for sim frames
 - **img2img alone** (denoise 0.6): best void preservation, good texture. **Use this as default**
@@ -105,14 +113,15 @@ This reframes the pipeline: the diffusion model is a **selective texture synthes
 
 ### Denoise is content-dependent
 - **Sparse frames** (sim_aesthetic, lots of void): denoise 0.5-0.7 works well. Strong transformation
-- **Dense frames** (sim_aesthetic_2, filled structure): denoise 0.6 produces near-identical output. **Need 0.8-0.9** for visible transformation
-- This is because img2img starts from the encoded image — denser input = less room for the model to reimagine at low denoise
+- **Dense frames** (sim_aesthetic_2, filled structure): denoise 0.6 produces near-identical output. **0.76 is the sweet spot** — enough transformation, preserves structure
+- 0.9+ was too aggressive for full batch despite looking interesting in single-image sweeps
+- img2img starts from the encoded image — denser input = less room for the model to reimagine at low denoise
 - **Always sweep denoise for new source material**
 
-### Trigger word behavior
-- `simaesthetic` alone: weak activation. Needs full descriptive prompt alongside
-- `simaesthetic` + full caption + LoRA 0.9: strong activation
-- Higher `caption_dropout_rate` (0.10-0.15) would fix this in retraining
+### Trigger word behavior (v2 update)
+- v1 (caption_dropout 0.05): `simaesthetic` alone = weak activation. Needed full descriptive prompt
+- **v2 (caption_dropout 0.15): trigger word binds strongly** — `simaesthetic` alone activates the style
+- Higher caption_dropout forces the model to associate the trigger word with the visual style, not the full caption
 
 ---
 
@@ -182,7 +191,7 @@ make_grid.py → side-by-side comparison grids
 
 ---
 
-## 8. Training Round 2 — FLUX + SDXL Retrain (In Progress)
+## 7. Training Round 2 — FLUX + SDXL Retrain (In Progress)
 
 ### What changed from v1
 - `caption_dropout_rate: 0.05 → 0.15` — fix weak trigger word binding
@@ -203,7 +212,7 @@ Running simultaneously on separate RunPod pods:
 
 ### FLUX training notes
 - Model: `black-forest-labs/FLUX.1-dev` (open weights, trainable)
-- NOT FLUX Kontext/Klein (API-only, no LoRA training)
+- NOT FLUX Klein (API-only, no LoRA training)
 - Required HF auth login (`huggingface-cli login`) — gated model
 - `noise_scheduler: flowmatch` (not ddpm)
 - `guidance_scale: 3.5` (FLUX uses lower cfg than SDXL's 6-7)
@@ -230,7 +239,7 @@ Running simultaneously on separate RunPod pods:
 
 ---
 
-## 9. SDXL v2 Results & Denoise Tuning
+## 8. SDXL v2 Results & Denoise Tuning
 
 ### SDXL v2 training complete
 - caption_dropout 0.15 (up from 0.05) — trigger word binding should be stronger
@@ -252,7 +261,7 @@ Running simultaneously on separate RunPod pods:
 
 ---
 
-## 10. Unresolved / Next Steps
+## 9. Unresolved / Next Steps
 
 ### Done
 - [x] Batch processing pipeline (batch_process.py + make_grid.py)
@@ -273,7 +282,7 @@ Running simultaneously on separate RunPod pods:
 - [~] Batch run on sim_aesthetic_2 with v2 LoRA, denoise 0.76
 
 ### To do
-- [ ] Timelapse grid from sim_aesthetic_2 v2 batch — interview artifact
+- [ ] Timelapse grid from sim_aesthetic_2 v2 batch
 - [ ] Download + test FLUX checkpoints when training completes
 - [ ] Compare FLUX vs SDXL v2 outputs in grid
 - [ ] Overlay composite video (overlay_composite.py ready, needs batch + manifest)

@@ -33,7 +33,7 @@ Unity Edge of Chaos (Physarum + Boids)
 | Script | Purpose |
 |--------|---------|
 | `prepare_dataset.py` | Crop + caption sim frames. Saves coordinates in manifest.json |
-| `batch_process.py` | Send frames to ComfyUI API, save outputs. `--limit`, `--denoise`, `--mode` |
+| `batch_process.py` | Send frames to ComfyUI API, save outputs. `--limit`, `--denoise`, `--lora-strength`, `--mode` |
 | `sweep_denoise.py` | Parameter sweep: vary one param, fixed seed, produces labeled grid |
 | `make_grid.py` | Comparison grids. `--timelapse`, `--count`/`--iter`, auto-wrap layout |
 | `overlay_composite.py` | Paste AI crops back onto ultrawide frames at original coords |

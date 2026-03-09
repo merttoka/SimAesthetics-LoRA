@@ -8,7 +8,7 @@ End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → 
 ### Simulation → AI Rendered (dense frames)
 ![Timelapse grid — dense frames](docs/grid-timelapse-dense.png)
 
-*Top row: raw Physarum/Boids simulation. Bottom row: same frames through SDXL LoRA (img2img, denoise 0.6). The model acts as a selective texture synthesizer — void stays dark, structure gets organic detail.*
+*Top row: raw Physarum/Boids simulation. Bottom row: same frames through SDXL LoRA (img2img, denoise 0.6, LoRA strength 0.35). The model acts as a selective texture synthesizer — void stays dark, structure gets organic detail.*
 
 ## Pipeline
 

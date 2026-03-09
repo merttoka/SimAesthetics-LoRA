@@ -36,10 +36,10 @@ Unity Edge of Chaos (Physarum + Boids)
 | `batch_process.py` | Send frames to ComfyUI API, save outputs. `--limit`, `--denoise`, `--lora-strength`, `--mode` |
 | `sweep_denoise.py` | Parameter sweep: 1D or 2D (matrix), fixed seed, labeled grid. `-p`/`-p2` |
 | `make_grid.py` | Comparison grids. `--timelapse`, `--count`/`--iter`, auto-wrap layout |
-| `overlay_composite.py` | Paste AI crops back onto ultrawide frames at original coords |
+| `overlay_composite.py` | Composite AI crops onto ultrawides. `--side-by-side`, `--h-crop`, `--variations` |
+| `flux_sample.py` | FLUX LoRA inference via diffusers (txt2img + img2img, no ComfyUI needed) |
 | `comfyui_client.py` | ComfyUI HTTP/WebSocket API client |
 | `pod.sh` | RunPod SSH/SCP helper (connect, upload, download, loras, samples) |
-| `make_grid.py` | Comparison grids with timelapse, batching, auto-wrap |
 
 ## Workflows
 

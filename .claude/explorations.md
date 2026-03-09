@@ -279,14 +279,20 @@ Running simultaneously on separate RunPod pods:
 
 ### In progress
 - [~] FLUX LoRA training — A100 80GB, ~10hrs, running
-- [~] Batch run on sim_aesthetic_2 with v2 LoRA, denoise 0.76, lora-strength 0.35
-- [~] 2D sweep: LoRA strength × ControlNet strength matrix
+
+### Done (this session)
+- [x] Batch run on sim_aesthetic_2 with v2 LoRA, denoise 0.76, lora-strength 0.35
+- [x] 2D sweep: LoRA strength × ControlNet strength matrix
+- [x] Timelapse grids from sim_aesthetic_2 v2 batch
+- [x] Overlay composite frames (side-by-side + variations mode)
+- [x] `flux_sample.py` — diffusers-based FLUX inference script (no ComfyUI needed)
 
 ### To do
-- [ ] Timelapse grid from sim_aesthetic_2 v2 batch
 - [ ] Download + test FLUX checkpoints when training completes
+- [ ] Generate FLUX samples on A100 pod via `flux_sample.py`
 - [ ] Compare FLUX vs SDXL v2 outputs in grid
-- [ ] Overlay composite video (overlay_composite.py ready, needs batch + manifest)
+
+### Nice to have
 - [ ] Depth ControlNet vs Canny for organic content
 - [ ] IPAdapter chained mode (style continuity across frames)
 - [ ] Non-sim prompts: coral reef, aerial city, mycelium over sim structure

@@ -2,6 +2,8 @@
 
 End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → ComfyUI img2img → photorealistic biological matter. Built with Unity Edge of Chaos simulation frames.
 
+![Composite: AI-rendered crops overlaid on ultrawide simulation frame](docs/composite_hero.png)
+
 ### Simulation → AI Rendered (sparse frames)
 
 ![Timelapse grid — sparse frames](docs/grid-timelapse-sparse.png)
@@ -11,12 +13,6 @@ End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → 
 ![Timelapse grid — dense frames](docs/grid-timelapse-dense.png)
 
 *Top row: raw Physarum/Boids simulation. Bottom row: same frames through SDXL LoRA (img2img, denoise 0.6, LoRA strength ~0.35). The model acts as a selective texture synthesizer — void stays dark, structure gets organic detail.*
-
-### LoRA Strength × ControlNet Strength sweep
-
-![2D sweep — LoRA strength × ControlNet strength](docs/grid-sweep-lora-x-controlnet.png) 
-
-*Frame 10500 -- Rows: LoRA strength (0.15 → 0.5). Columns: ControlNet strength (0.5 → 1.0). Lower LoRA = more creative freedom; higher ControlNet = tighter structure lock.*
 
 ## Pipeline
 
@@ -48,6 +44,13 @@ Unity Edge of Chaos (Physarum + Boids)
     make_grid.py → comparison grids (timelapse, batched, sweep)
 ```
 
+### LoRA Strength × ControlNet Strength sweep
+
+![2D sweep — LoRA strength × ControlNet strength](docs/grid-sweep-lora-x-controlnet.png) 
+
+*Frame 10500 -- Rows: LoRA strength (0.15 → 0.5). Columns: ControlNet strength (0.5 → 1.0). Lower LoRA = more creative freedom; higher ControlNet = tighter structure lock.*
+
+
 ## Quick Start
 
 ```bash
@@ -78,10 +81,17 @@ python scripts/make_grid.py \
   -l datasets/sim_aesthetic/ -r outputs/ \
   --timelapse -m datasets/sim_aesthetic/manifest.json -o grid.png
 
-# 6. Overlay composite back onto ultrawide
+# 6. Overlay composite back onto ultrawide (side-by-side, middle 40%)
 python scripts/overlay_composite.py \
   -m datasets/sim_aesthetic/manifest.json \
-  -a outputs/ -s recordings/ -o outputs/composite/
+  -a outputs/ -s recordings/ -o outputs/composite/ \
+  --side-by-side --h-crop 0.4
+
+# 7. Variations mode: scattered AI patches
+python scripts/overlay_composite.py \
+  -m datasets/sim_aesthetic/manifest.json \
+  -a outputs/ -s recordings/ -o outputs/composite_var/ \
+  --variations 6 --patch-range 192,512 --side-by-side
 ```
 
 ## Scripts
@@ -91,9 +101,10 @@ python scripts/overlay_composite.py \
 | ---------------------- | -------------------------------------------------------------- |
 | `prepare_dataset.py`   | Crop + caption sim frames. Saves coordinates in manifest.json  |
 | `batch_process.py`     | Send frames to ComfyUI API. `--limit`, `--denoise`, `--mode`   |
-| `sweep_denoise.py`     | Parameter sweep: vary one param, fixed seed, labeled grid      |
+| `sweep_denoise.py`     | Parameter sweep: 1D or 2D matrix, fixed seed, labeled grid     |
 | `make_grid.py`         | Comparison grids. `--timelapse`, `--count`/`--iter`, auto-wrap |
-| `overlay_composite.py` | Paste AI crops back onto ultrawide at original coords          |
+| `overlay_composite.py` | Composite AI onto ultrawides. `--side-by-side`, `--h-crop`, `--variations` |
+| `flux_sample.py`       | FLUX LoRA inference via diffusers (txt2img + img2img)          |
 | `comfyui_client.py`    | ComfyUI HTTP/WebSocket API client                              |
 | `pod.sh`               | RunPod SSH/SCP helper (`./pod.sh <flux|sdxl> <command>`)       |
 

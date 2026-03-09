@@ -262,12 +262,61 @@ Running simultaneously on separate RunPod pods:
 
 ### FLUX img2img results
 - Used `flux_sample.py` (diffusers-based, no ComfyUI) on A100 pod
-- **Best params**: denoise 0.7, lora-strength 0.35, cfg 3.5, steps 28
+- **Initial batch params**: denoise 0.7, lora-strength 0.35, cfg 3.5, steps 28
 - Prompt: `simaesthetic, bioluminescent organic network, physarum slime mold veins, cyan and amber glow, dark background`
 - Results look very good — distinct from SDXL, more photorealistic detail
 - FLUX vs SDXL comparison grid at `outputs/grid_flux_vs_sdxl.png`
 - **FLUX can't run on 3080 (10GB)** — must use A100 pod or cloud for inference
-- ~15s per image on A100, ~$1.35 for 270 images
+- ~12s per image on A100, ~$1.35 for 270 images
+
+### FLUX parameter sweeps (`flux_sweep.py`)
+- **Structural integrity preserved** across sweep ranges — FLUX img2img maintains sim layout
+- Initial concern about structural drift (vs SDXL) was unfounded at proper denoise levels
+
+#### 1D sweeps (on img_010, seed 42)
+- **Denoise** (0.3–0.8): structure intact across range. 0.3–0.4 very close to input, 0.7–0.8 adds significant texture while preserving layout
+- **LoRA strength** (0.0–0.9): 0.0 (no LoRA) still produces interesting results. Higher values push toward training aesthetic
+- **Steps** (10–50): minimal visible difference — FLUX flow matching converges quickly. 28 is fine, no need for more
+
+#### Why FLUX img2img preserves structure differently than SDXL
+- Flow matching (linear interpolation) vs DDPM (non-linear noise schedule) — same `strength` value maps to different effective noise levels
+- FLUX 16-channel VAE vs SDXL 4-channel — different spatial encoding
+- DiT (global attention on patches) vs UNet (convolutional spatial bias) — FLUX less spatially rigid
+- **Practical fix**: lower denoise for FLUX (0.5–0.7) compared to SDXL (0.6–0.8) to match structural fidelity
+
+#### 2D sweep: denoise × LoRA strength
+- Denoise 0.7–0.9 (6 steps) × LoRA 0.2–0.65 (6 steps) = 36 image matrix
+- Grid at `outputs/flux_sweeps/grid_2d_denoise_x_lora.png`
+- Helps identify optimal combination for structural fidelity + aesthetic quality
+
+### FLUX vs SDXL comparison grids
+Matched comparison grids using sim_aesthetic_2 timelapse frames (one crop per source frame, sorted by time).
+
+#### Grid parameters
+| | SDXL v2 (`img2img-lora_v2-3`) | FLUX |
+|--|-------------------------------|------|
+| Denoise | 0.6 | 0.75 |
+| LoRA strength | 0.34 | 0.4 / 0.56 / 0.7 (3 versions) |
+| CFG | 6.0 | 3.5 |
+| Steps | 30 | 28 |
+| Seed | 1773031112 | 42 |
+| Prompt | simaesthetic, bioluminescent organic network... | same |
+
+#### Grids produced
+- `grid_flux_vs_sdxl.png` — 6 frames spanning full timeline (f500–f38000), FLUX lora=0.4
+- `grid_flux_vs_sdxl_early.png` — 6 early frames (f500–f8000), FLUX lora=0.4
+- `grid_flux_vs_sdxl_early_lora056.png` — early frames, FLUX lora=0.56
+- `grid_flux_vs_sdxl_early_lora070.png` — early frames, FLUX lora=0.7
+
+#### Observations
+- Higher FLUX LoRA strength (0.56–0.7) pushes output closer to training aesthetic (cyan/amber glow)
+- FLUX produces more photorealistic detail than SDXL at comparable settings
+- Both models preserve structural integrity of sim frames at these denoise levels
+- FLUX needs higher denoise than SDXL to get equivalent transformation (0.75 vs 0.6)
+
+### Pod stopped
+- FLUX A100 pod stopped after all generation complete
+- Total pod time: ~12hrs (training) + ~2hrs (inference/sweeps) ≈ $17 at $1.22/hr
 
 ---
 
@@ -286,8 +335,6 @@ Running simultaneously on separate RunPod pods:
 - [x] SDXL v2 retrain — caption_dropout 0.15, A40 48GB, complete
 - [x] Denoise sweep on sim_aesthetic_2 — 0.76 optimal for dense frames
 - [x] Workflows updated to v2 LoRA
-
-### Done (this session)
 - [x] Batch run on sim_aesthetic_2 with v2 LoRA, denoise 0.76, lora-strength 0.35
 - [x] 2D sweep: LoRA strength × ControlNet strength matrix
 - [x] Timelapse grids from sim_aesthetic_2 v2 batch
@@ -298,7 +345,10 @@ Running simultaneously on separate RunPod pods:
 - [x] FLUX LoRA training — A100 80GB, ~10hrs, 2500 steps complete
 - [x] Download FLUX checkpoints (6 + final, 165MB each)
 - [x] Generate FLUX txt2img + img2img samples via `flux_sample.py` on A100
-- [x] FLUX vs SDXL v2 comparison grid (`outputs/grid_flux_vs_sdxl.png`)
+- [x] FLUX 1D sweeps: denoise, LoRA strength, steps — structural integrity confirmed
+- [x] FLUX 2D sweep: denoise × LoRA strength matrix (36 images)
+- [x] FLUX batch on sim_aesthetic_2 (270 frames, denoise 0.7, lora 0.35)
+- [x] FLUX vs SDXL matched comparison grids (3 LoRA strength variants)
 
 ### Nice to have
 - [ ] Depth ControlNet vs Canny for organic content

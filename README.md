@@ -5,15 +5,11 @@ End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → 
 ![Composite: AI-rendered crops overlaid on ultrawide simulation frame](docs/composite_hero.png)
 *Overlays: SDXL LoRA img2img crops composited onto ultrawide Physarum/Boids simulation frame. Background: original symbolic simulation output.*
 
-### Simulation → AI Rendered (sparse frames)
+### FLUX vs SDXL LoRA — Early Frames
 
-![Timelapse grid — sparse frames](docs/grid-timelapse-sparse.png)
+![FLUX vs SDXL comparison — early frames, FLUX LoRA 0.7](docs/grid-flux-vs-sdxl.png)
 
-### Simulation → AI Rendered (dense frames)
-
-![Timelapse grid — dense frames](docs/grid-timelapse-dense.png)
-
-*Top row: raw Physarum/Boids simulation. Bottom row: same frames through SDXL LoRA (img2img, denoise 0.6, LoRA strength ~0.35). The model acts as a selective texture synthesizer — void stays dark, structure gets organic detail.*
+*Top: raw simulation. Middle: SDXL v2 (denoise 0.6, LoRA 0.34, cfg 6.0). Bottom: FLUX (denoise 0.75, LoRA 0.7, cfg 3.5). Same dataset, same prompt. FLUX produces more photorealistic detail; higher LoRA strength pushes closer to the training aesthetic.*
 
 ## Pipeline
 

@@ -10,6 +10,11 @@ End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → 
 
 *Top row: raw Physarum/Boids simulation. Bottom row: same frames through SDXL LoRA (img2img, denoise 0.6, LoRA strength 0.35). The model acts as a selective texture synthesizer — void stays dark, structure gets organic detail.*
 
+### LoRA Strength × ControlNet Strength sweep
+![2D sweep — LoRA strength × ControlNet strength](docs/grid-sweep-lora-x-controlnet.png)
+
+*Rows: LoRA strength (0.15 → 0.5). Columns: ControlNet strength (0.5 → 1.0). Lower LoRA = more creative freedom; higher ControlNet = tighter structure lock.*
+
 ## Pipeline
 
 ```

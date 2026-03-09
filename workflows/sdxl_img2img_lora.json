@@ -67,7 +67,7 @@
   "40": {
     "class_type": "LoraLoader",
     "inputs": {
-      "lora_name": "sim_aesthetic_sdxl.safetensors",
+      "lora_name": "sim_aesthetic_sdxl_v2.safetensors",
       "strength_model": 0.9,
       "strength_clip": 0.9,
       "model": ["1", 0],

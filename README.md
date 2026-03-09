@@ -2,6 +2,14 @@
 
 End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → ComfyUI img2img → photorealistic biological matter. Built with [Unity Edge of Chaos](https://github.com/merttoka/UNITY_EoC_GPU) simulation frames.
 
+### Simulation → AI Rendered (sparse frames)
+![Timelapse grid — sparse frames](docs/grid-timelapse-sparse.png)
+
+### Simulation → AI Rendered (dense frames)
+![Timelapse grid — dense frames](docs/grid-timelapse-dense.png)
+
+*Top row: raw Physarum/Boids simulation. Bottom row: same frames through SDXL LoRA (img2img, denoise 0.6). The model acts as a selective texture synthesizer — void stays dark, structure gets organic detail.*
+
 ## Pipeline
 
 ```

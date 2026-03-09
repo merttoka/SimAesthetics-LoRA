@@ -252,7 +252,29 @@ Running simultaneously on separate RunPod pods:
 
 ---
 
-## 9. Unresolved / Next Steps
+## 9. SDXL v2 Results & Denoise Tuning
+
+### SDXL v2 training complete
+- caption_dropout 0.15 (up from 0.05) — trigger word binding should be stronger
+- Downloaded all checkpoints (1250–2250 + final) to `loras/`
+- Workflows updated to `sim_aesthetic_sdxl_v2.safetensors`
+
+### Denoise sweep on sim_aesthetic_2
+- Swept 0.5–0.95 in 6 steps on dense frames
+- **0.9-0.92 looked interesting** in sweep but too aggressive for full batch — lost structure
+- **0.76 is the sweet spot** for dense frames: enough transformation to add organic texture, preserves recognizable structure
+- Sparse frames (sim_aesthetic) still work well at 0.6
+- **Takeaway**: denoise is dataset-dependent, always sweep before batch
+
+### FLUX training
+- Running on A100 80GB, ~14.5s/step (2500 steps ≈ 10hrs)
+- Had to fix: PyTorch 2.4→2.6 (enable_gqa), torchaudio ABI mismatch, disable sample gen (tokenizer crash on neg prompt)
+- Checkpoints saving every 500 steps
+- Cost: ~$12 at $1.22/hr spot
+
+---
+
+## 10. Unresolved / Next Steps
 
 ### Done
 - [x] Batch processing pipeline (batch_process.py + make_grid.py)
@@ -264,18 +286,19 @@ Running simultaneously on separate RunPod pods:
 - [x] Fixed Impact Pack crashes (removed _comment keys, Reroute nodes)
 - [x] Batch run on sim_aesthetic (270 frames, img2img_lora) — strong results
 - [x] Batch run on sim_aesthetic_2 — identified denoise too low for dense content
+- [x] SDXL v2 retrain — caption_dropout 0.15, A40 48GB, complete
+- [x] Denoise sweep on sim_aesthetic_2 — 0.76 optimal for dense frames
+- [x] Workflows updated to v2 LoRA
 
 ### In progress
-- [~] FLUX LoRA training — A100 80GB, running
-- [~] SDXL v2 retrain — A40 48GB, running (caption_dropout 0.15)
+- [~] FLUX LoRA training — A100 80GB, ~10hrs, running
+- [~] Batch run on sim_aesthetic_2 with v2 LoRA, denoise 0.76
 
 ### To do
-- [ ] Download + test FLUX and SDXL v2 checkpoints
-- [ ] Compare FLUX vs SDXL v2 outputs in grid — interview artifact
-- [ ] **Denoise sweep on sim_aesthetic_2** — find optimal denoise (likely 0.8-0.9)
-- [ ] **Re-batch sim_aesthetic_2** with tuned parameters
-- [ ] Overlay composite video (overlay_composite.py ready, needs re-prepped dataset with coords)
+- [ ] Timelapse grid from sim_aesthetic_2 v2 batch — interview artifact
+- [ ] Download + test FLUX checkpoints when training completes
+- [ ] Compare FLUX vs SDXL v2 outputs in grid
+- [ ] Overlay composite video (overlay_composite.py ready, needs batch + manifest)
 - [ ] Depth ControlNet vs Canny for organic content
 - [ ] IPAdapter chained mode (style continuity across frames)
 - [ ] Non-sim prompts: coral reef, aerial city, mycelium over sim structure
-- [ ] Multi-param sweep (denoise × LoRA strength matrix)

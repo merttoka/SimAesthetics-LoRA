@@ -1,6 +1,6 @@
-# COMFY_SimAesthetics
+# SimAesthetics-LoRA
 
-ComfyUI + LoRA pipeline for generative simulation aesthetics. ALife simulations (Physarum, Boids from [Edge of Chaos](../UNITY_EoC_GPU)) → SDXL img2img + custom LoRA → photorealistic biological matter.
+End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → ComfyUI img2img → photorealistic biological matter. Built with [Unity Edge of Chaos](https://github.com/merttoka/UNITY_EoC_GPU) simulation frames.
 
 ## Pipeline
 
@@ -9,102 +9,116 @@ Unity Edge of Chaos (Physarum + Boids)
 └── 45k frames → every 500th → 91 ultrawide (14336x1920)
          │
     prepare_dataset.py
-    (random 1024² crops, brightness filter, captions)
+    ├── random 1024² crops from middle 30% (h_focus=0.3)
+    ├── brightness filter (min_brightness=8.0)
+    └── 3 crops/frame → 270 training pairs
          │
          ▼
-    270 training pairs → ai-toolkit LoRA (SDXL, rank 16)
-    trigger: "simaesthetic" │ RunPod L40S ~55min
+    ai-toolkit LoRA training
+    ├── SDXL rank 16 (RunPod A40 ~55min)
+    ├── FLUX rank 16 (RunPod A100 ~1-2hr)
+    ├── trigger: "simaesthetic"
+    └── caption_dropout: 0.15
          │
          ▼
     ComfyUI (Windows 3080 LAN)
-    ├── img2img: VAE Encode → KSampler (denoise 0.5-0.7)
-    │   └── preserves void regions, adds texture to structure
-    ├── ControlNet (Canny): structure-preserving generation
-    └── LoRA strength 0.85-0.95: aesthetic intensity
+    ├── img2img: VAE Encode → KSampler (denoise 0.5-0.9)
+    │   └── preserves void, adds texture to structure
+    ├── + LoRA (0.85-0.95): learned sim aesthetic
+    └── + ControlNet (optional): structure lock at high denoise
          │
          ▼
-    Output: sim skeleton → photorealistic biomass
-    make_grid.py → side-by-side comparison grid
+    overlay_composite.py → AI crops back onto ultrawide → video
+    make_grid.py → comparison grids (timelapse, batched, sweep)
 ```
 
 ## Quick Start
 
 ```bash
-# 1. Prepare dataset from sim frames (random 1024² crops)
+# 1. Prepare dataset from sim frames
 python scripts/prepare_dataset.py -i recordings/ -o datasets/sim_aesthetic/ \
   -t biomaesthetic --type physarum --crop sample --samples 3 --h-focus 0.3 --size 1024
 
-# 2. Train LoRA on RunPod (upload dataset + config)
-./scripts/pod.sh upload datasets/sim_aesthetic /workspace/datasets/sim_aesthetic
-./scripts/pod.sh upload scripts/train_config_sdxl_runpod.yaml /workspace/
+# 2. Train LoRA on RunPod
+./scripts/pod.sh sdxl upload datasets/sim_aesthetic /workspace/datasets/sim_aesthetic
+./scripts/pod.sh sdxl upload scripts/train_config_sdxl_runpod.yaml /workspace/
 # On pod: python run.py /workspace/train_config_sdxl_runpod.yaml
-./scripts/pod.sh loras  # download checkpoints
+./scripts/pod.sh sdxl loras  # download checkpoints
 
-# 3. Test checkpoints in ComfyUI txt2img (pick best step)
-# Load LoRA in ComfyUI, try trigger "simaesthetic" + descriptive prompt
+# 3. Batch process through ComfyUI
+python scripts/batch_process.py \
+  -i datasets/sim_aesthetic/ -w workflows/sdxl_img2img_lora.json \
+  --host http://192.168.0.52:8188 --denoise 0.6 --limit 50
 
-# 4. Generate outputs: img2img (denoise 0.5-0.7) or ControlNet
-python scripts/batch_process.py -i datasets/sim_aesthetic/ -w workflows/sdxl_img2img.json
+# 4. Parameter sweep
+python scripts/sweep_denoise.py \
+  -i datasets/sim_aesthetic/img_010.png \
+  -w workflows/sdxl_img2img_lora.json \
+  --host http://192.168.0.52:8188 \
+  -p 3.denoise --range 0.5,0.95,6
 
-# 5. Build comparison grid
-python scripts/make_grid.py --left datasets/sim_aesthetic/ --right outputs/ --out grid.png
+# 5. Comparison grid (timelapse mode)
+python scripts/make_grid.py \
+  -l datasets/sim_aesthetic/ -r outputs/ \
+  --timelapse -m datasets/sim_aesthetic/manifest.json -o grid.png
+
+# 6. Overlay composite back onto ultrawide
+python scripts/overlay_composite.py \
+  -m datasets/sim_aesthetic/manifest.json \
+  -a outputs/ -s recordings/ -o outputs/composite/
 ```
 
-## Structure
+## Scripts
 
-```
-COMFY_SimAesthetics/
-├── workflows/                # ComfyUI workflow JSONs (API format)
-│   ├── sdxl_img2img.json
-│   ├── sdxl_controlnet_canny.json
-│   ├── sdxl_controlnet_ipa.json         # Full BFL API equivalent
-│   ├── sdxl_controlnet_lora.json
-│   └── flux_controlnet_depth_lora.json  # FLUX + Depth CN + LoRA (lifecycle prototype)
-├── scripts/                  # Automation & tooling (runs on Mac)
-│   ├── comfyui_client.py                # ComfyUI API client
-│   ├── batch_process.py                 # Batch frame processing
-│   ├── prepare_dataset.py              # LoRA dataset prep (random crops, brightness filter)
-│   ├── make_grid.py                    # Side-by-side comparison grid builder
-│   ├── pod.sh                          # RunPod SSH/SCP helper
-│   ├── scrape_textures.py              # CC-licensed bio texture scraper
-│   ├── raster_to_controlnet.py         # Satellite/GeoTIFF → ControlNet PNG
-│   ├── export_frames.py                # DLA frame extraction
-│   ├── sweep_denoise.py                # Parameter sweep comparisons
-│   ├── sweep_txt2img.py                # KSampler settings sweep
-│   ├── train_config_sdxl.yaml          # ai-toolkit SDXL config (local 3080)
-│   ├── train_config_sdxl_runpod.yaml   # ai-toolkit SDXL config (RunPod L40S)
-│   └── train_config_flux.yaml          # ai-toolkit Flux config (A100)
-├── datasets/                 # Training datasets (img + txt pairs)
-├── loras/                    # Trained LoRA checkpoints
-├── outputs/                  # Generated outputs
-└── docs/                     # Pipeline documentation, comparisons
-```
+| Script | Purpose |
+|--------|---------|
+| `prepare_dataset.py` | Crop + caption sim frames. Saves coordinates in manifest.json |
+| `batch_process.py` | Send frames to ComfyUI API. `--limit`, `--denoise`, `--mode` |
+| `sweep_denoise.py` | Parameter sweep: vary one param, fixed seed, labeled grid |
+| `make_grid.py` | Comparison grids. `--timelapse`, `--count`/`--iter`, auto-wrap |
+| `overlay_composite.py` | Paste AI crops back onto ultrawide at original coords |
+| `comfyui_client.py` | ComfyUI HTTP/WebSocket API client |
+| `pod.sh` | RunPod SSH/SCP helper (`./pod.sh <flux\|sdxl> <command>`) |
+
+## Workflows (ComfyUI API format)
+
+| Workflow | Description |
+|----------|-------------|
+| `sdxl_img2img_lora.json` | **Primary.** img2img + LoRA |
+| `sdxl_controlnet_lora.json` | img2img + Canny ControlNet + LoRA |
+| `sdxl_img2img.json` | img2img baseline (no LoRA) |
+| `sdxl_controlnet_canny.json` | ControlNet only (no LoRA) |
+| `flux_controlnet_depth_lora.json` | FLUX + Depth CN + LoRA (untested) |
+
+UI-format versions for drag-and-drop: `ui_sdxl_img2img_lora.json`, `ui_sdxl_controlnet_lora.json`
 
 ## Key Findings
 
-- **img2img > txt2img for sim frames**: VAE Encode + KSampler (denoise 0.5-0.7) preserves dark void regions. txt2img + ControlNet fills everything with content
-- **Canny ControlNet is redundant**: sim frames ARE edges on black — Canny extraction → regeneration round-trips the same structure
-- **LoRA trigger word needs high caption dropout**: `caption_dropout_rate: 0.05` → weak trigger. Need 0.10-0.15 for strong `simaesthetic` binding
-- **Best settings**: LoRA 0.85-0.95, ControlNet 0.7-0.8 (Canny low=237/high=255), denoise 0.5-0.7, cfg 6.0
+- **img2img > txt2img**: VAE Encode + denoise 0.5-0.7 preserves void. txt2img fills everything
+- **Canny ControlNet redundant on sim frames**: sim IS edges. Round-tripping adds nothing
+- **Denoise is content-dependent**: sparse frames → 0.6, dense frames → 0.8-0.9
+- **Trigger word needs aggressive caption dropout**: 0.05 too low, retrained with 0.15
+- **LoRA strength sweet spot**: 0.85-0.95. Below 0.8 barely visible, above 1.0 artifacts
+
+## Training
+
+| Config | Target | Hardware | Time | Status |
+|--------|--------|----------|------|--------|
+| `train_config_sdxl_runpod.yaml` | SDXL v2 rank 16 | RunPod A40 48GB | ~55min | Trained |
+| `train_config_flux.yaml` | FLUX rank 16 | RunPod A100 80GB | ~1-2hr | Training |
+| `train_config_sdxl.yaml` | SDXL rank 16 | Local 3080 | ~80hr | v1 done |
 
 ## Hardware
 
+| Task | 3080 (10GB) | RunPod A40 | RunPod A100 | Mac |
+|------|-------------|------------|-------------|-----|
+| SDXL img2img | 1024px | — | — | — |
+| SDXL LoRA training | ~80hr | ~55min | — | — |
+| FLUX LoRA training | OOM | OOM (48GB) | ~1-2hr | — |
+| Dataset prep / scripting | — | — | — | Yes |
 
-| Task                         | 3080 (10GB) | RunPod L40S | Mac |
-| ---------------------------- | ----------- | ----------- | --- |
-| SDXL img2img / ControlNet    | 1024px      | —           | —   |
-| SDXL LoRA training (rank 16) | ~80hr       | ~55min      | —   |
-| Flux LoRA training           | OOM         | OOM (48GB)  | —   |
-| Dataset prep / scripting     | —           | —           | Yes |
+## Dependencies
 
-
-## Models Required
-
-**On Windows 3080:**
-
-- `sd_xl_base_1.0.safetensors` + `sdxl_vae.safetensors`
-- `control-lora-canny-rank256.safetensors` (SDXL ControlNet)
-- Custom LoRA: `sim_aesthetic_sdxl.safetensors` (trained, rank 16)
-
-**Custom nodes (install via ComfyUI Manager):**
-ComfyUI-Manager, comfyui-controlnet-aux, ComfyUI_IPAdapter_plus
+- Python 3.11+, Pillow, websocket-client
+- Optional: transformers+torch (captioning), playwright (frame capture)
+- ComfyUI custom nodes: ComfyUI-Manager, comfyui-controlnet-aux, ComfyUI_IPAdapter_plus

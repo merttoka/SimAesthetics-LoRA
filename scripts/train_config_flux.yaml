@@ -52,16 +52,18 @@ config:
         name_or_path: "black-forest-labs/FLUX.1-dev"
         is_flux: true
         quantize: true          # fp8 — fits A100 40GB comfortably
-      sample:
-        sampler: "flowmatch"
-        sample_every: 250
-        width: 1024
-        height: 1024
-        prompts:
-          - "simaesthetic, bioluminescent organic network, physarum slime mold veins, cyan and amber glow, dark background"
-          - "simaesthetic, dense cellular growth structure, branching transport network, scanning electron microscope aesthetic"
-          - "a photograph of a golden retriever sitting in a park"
-        seed: 42
-        walk_seed: true
-        guidance_scale: 3.5     # FLUX uses lower guidance than SDXL
-        sample_steps: 28
+      # sample generation disabled — ai-toolkit FLUX sampler crashes on neg prompt encoding
+      # (encode_prompts_flux passes None to tokenizer). Re-enable after patching train_tools.py
+      # sample:
+      #   sampler: "flowmatch"
+      #   sample_every: 500
+      #   width: 1024
+      #   height: 1024
+      #   prompts:
+      #     - "simaesthetic, bioluminescent organic network, physarum slime mold veins, cyan and amber glow, dark background"
+      #     - "simaesthetic, dense cellular growth structure, branching transport network, scanning electron microscope aesthetic"
+      #     - "a photograph of a golden retriever sitting in a park"
+      #   seed: 42
+      #   walk_seed: true
+      #   guidance_scale: 3.5
+      #   sample_steps: 28

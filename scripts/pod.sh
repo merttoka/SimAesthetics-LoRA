@@ -1,54 +1,78 @@
 #!/bin/bash
 # Quick file transfer to/from RunPod
 # Usage:
-#   ./pod.sh connect                     # SSH into pod
-#   ./pod.sh upload <local> <remote>     # Upload file/dir to pod
-#   ./pod.sh download <remote> <local>   # Download file/dir from pod
-#   ./pod.sh loras                       # Download all LoRA checkpoints
-#   ./pod.sh samples                     # Download sample images
+#   ./pod.sh flux connect                  # SSH into flux pod
+#   ./pod.sh sdxl upload <local> <remote>  # Upload to sdxl pod
+#   ./pod.sh flux loras                    # Download flux LoRA checkpoints
+#   ./pod.sh sdxl loras                    # Download sdxl LoRA checkpoints
 
-# ── Config (update these) ──────────────────
-POD_IP="195.26.232.162"
-POD_PORT="37626"
-# ────────────────────────────────────────────
+# ── Pod configs ───────────────────────────────
+declare -A POD_IPS POD_PORTS POD_JOBS
+POD_IPS[flux]="64.247.206.116"
+POD_PORTS[flux]="17763"
+POD_JOBS[flux]="sim_aesthetic_flux"
 
-SCP_OPTS="-o StrictHostKeyChecking=no -P $POD_PORT"
-SSH_OPTS="-o StrictHostKeyChecking=no -p $POD_PORT"
+POD_IPS[sdxl]="195.26.232.162"
+POD_PORTS[sdxl]="56746"
+POD_JOBS[sdxl]="sim_aesthetic_sdxl_v2"
+# ──────────────────────────────────────────────
 
-case "$1" in
+POD="$1"
+CMD="$2"
+shift 2 2>/dev/null
+
+if [[ -z "${POD_IPS[$POD]}" ]]; then
+  echo "Usage: ./pod.sh <flux|sdxl> <command> [args...]"
+  echo ""
+  echo "Pods:"
+  echo "  flux   FLUX training (A100 80GB)"
+  echo "  sdxl   SDXL retrain (A40 48GB)"
+  echo ""
+  echo "Commands:"
+  echo "  connect                    SSH into pod"
+  echo "  upload <local> <remote>    Upload to pod"
+  echo "  download <remote> <local>  Download from pod"
+  echo "  loras [job]                Download LoRA checkpoints"
+  echo "  samples [job]              Download training samples"
+  echo "  stop                       Stop the pod"
+  exit 1
+fi
+
+IP="${POD_IPS[$POD]}"
+PORT="${POD_PORTS[$POD]}"
+JOB="${POD_JOBS[$POD]}"
+SCP_OPTS="-o StrictHostKeyChecking=no -P $PORT"
+SSH_OPTS="-o StrictHostKeyChecking=no -p $PORT"
+
+case "$CMD" in
   connect)
-    ssh $SSH_OPTS root@$POD_IP
+    ssh $SSH_OPTS root@$IP
     ;;
   upload)
-    scp -r $SCP_OPTS "$2" "root@$POD_IP:${3:-/workspace/}"
+    scp -r $SCP_OPTS "$1" "root@$IP:${2:-/workspace/}"
     ;;
   download)
-    scp -r $SCP_OPTS "root@$POD_IP:$2" "${3:-.}"
+    scp -r $SCP_OPTS "root@$IP:$1" "${2:-.}"
     ;;
   loras)
-    JOB="${2:-sim_aesthetic_sdxl}"
+    J="${1:-$JOB}"
     mkdir -p loras
-    scp $SCP_OPTS "root@$POD_IP:/workspace/output/$JOB/$JOB/*.safetensors" loras/
+    scp $SCP_OPTS "root@$IP:/workspace/output/$J/$J/*.safetensors" loras/
     echo "Downloaded to loras/"
     ls -lh loras/*.safetensors 2>/dev/null
     ;;
   samples)
-    JOB="${2:-sim_aesthetic_sdxl}"
-    mkdir -p outputs/samples
-    scp -r $SCP_OPTS "root@$POD_IP:/workspace/output/$JOB/$JOB/samples/" outputs/samples/
-    echo "Downloaded to outputs/samples/"
+    J="${1:-$JOB}"
+    mkdir -p outputs/samples_${POD}
+    scp -r $SCP_OPTS "root@$IP:/workspace/output/$J/$J/samples/" outputs/samples_${POD}/
+    echo "Downloaded to outputs/samples_${POD}/"
     ;;
   stop)
-    ssh $SSH_OPTS root@$POD_IP "runpodctl stop pod" 2>/dev/null
-    echo "Pod stop requested"
+    ssh $SSH_OPTS root@$IP "runpodctl stop pod" 2>/dev/null
+    echo "Pod $POD stop requested"
     ;;
   *)
-    echo "Usage: ./pod.sh {connect|upload|download|loras|samples|stop}"
-    echo "  connect                    SSH into pod"
-    echo "  upload <local> <remote>    Upload to pod"
-    echo "  download <remote> <local>  Download from pod"
-    echo "  loras                      Download all LoRA checkpoints"
-    echo "  samples                    Download training sample images"
-    echo "  stop                       Stop the pod"
+    echo "Unknown command: $CMD"
+    echo "Commands: connect, upload, download, loras, samples, stop"
     ;;
 esac

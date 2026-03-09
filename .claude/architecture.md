@@ -149,17 +149,35 @@ Auto-wraps into rows when pairs > `--max-cols` (default 8), keeping cols >= rows
 
 ## Training Configs
 
-| Config | Target | Hardware | Time |
-|--------|--------|----------|------|
-| `train_config_sdxl.yaml` | SDXL rank 16 | Local 3080 | ~80hr (impractical) |
-| `train_config_sdxl_runpod.yaml` | SDXL rank 16 | RunPod L40S 48GB | ~55min |
-| `train_config_flux.yaml` | FLUX | RunPod A100 80GB | untested |
+| Config | Target | Hardware | Time | Caption dropout | Status |
+|--------|--------|----------|------|-----------------|--------|
+| `train_config_sdxl.yaml` | SDXL rank 16 | Local 3080 | ~80hr | 0.05 | v1 done (impractical) |
+| `train_config_sdxl_runpod.yaml` | SDXL v2 rank 16 | RunPod A40 48GB | ~55min | **0.15** | **Training** |
+| `train_config_flux.yaml` | FLUX rank 16 | RunPod A100 80GB | ~1-2hr | **0.15** | **Training** |
+
+### Training round 2 pods
+```bash
+# Pod management (pod.sh supports both)
+./scripts/pod.sh flux connect     # A100 80GB — 64.247.206.116:17763
+./scripts/pod.sh sdxl connect     # A40 48GB  — 195.26.232.162:56746
+./scripts/pod.sh flux loras       # download FLUX checkpoints
+./scripts/pod.sh sdxl loras       # download SDXL v2 checkpoints
+./scripts/pod.sh flux stop
+./scripts/pod.sh sdxl stop
+```
+
+### GPU selection for LoRA training
+- Multi-GPU doesn't help — ai-toolkit uses `cuda:0` only
+- FLUX needs 80GB on one card (loads fp32 before quantizing)
+- A100 SXM 80GB: $1.22/hr spot (cheapest for FLUX)
+- 2x A40: $0.40/hr spot (cheapest for SDXL, 48GB/card)
+- Volume disk: 50GB minimum
 
 ## What to try next
 
-- **FLUX LoRA training** (A100 80GB, ~$2-3/hr) — same 270 images, `caption_dropout_rate: 0.15`
-- **Retrain SDXL** with `caption_dropout_rate: 0.15` for stronger trigger word
-- **Depth ControlNet** instead of Canny for volumetric organic content
-- **IPAdapter chained mode** for style continuity across frame sequences
-- **Non-sim prompts over sim structure**: coral reef, aerial city, mycelium
-- **Overlay video**: re-run prepare_dataset for coords → batch process → composite → ffmpeg
+- [ ] Download + compare FLUX vs SDXL v2 outputs in grid
+- [ ] Denoise sweep on sim_aesthetic_2 (dense frames need higher denoise)
+- [ ] Depth ControlNet instead of Canny for volumetric organic content
+- [ ] IPAdapter chained mode for style continuity across frame sequences
+- [ ] Non-sim prompts over sim structure: coral reef, aerial city, mycelium
+- [ ] Overlay video: re-run prepare_dataset for coords → batch process → composite → ffmpeg

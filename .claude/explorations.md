@@ -203,33 +203,52 @@ make_grid.py → side-by-side comparison grids
 
 ---
 
-## 8. FLUX LoRA Training — Should We?
+## 8. Training Round 2 — FLUX + SDXL Retrain (In Progress)
 
-### Pros
-- FLUX produces significantly higher quality/coherence than SDXL
-- Flow matching (FLUX) vs DDPM (SDXL) — better for fine detail
-- T5 text encoder understands complex prompts better — trigger word may bind more naturally
-- BFL interview — demonstrating FLUX mastery is directly relevant
+### What changed from v1
+- `caption_dropout_rate: 0.05 → 0.15` — fix weak trigger word binding
+- SDXL job renamed to `sim_aesthetic_sdxl_v2`
+- FLUX training attempted for first time
 
-### Cons
-- Needs A100 80GB (~$2-3/hr on RunPod). FLUX loads fp32 before quantizing
-- No trained FLUX LoRA yet — would need to re-prep dataset (or reuse same 270 images)
-- ControlNet ecosystem for FLUX is less mature than SDXL
-- Current SDXL results already look good
+### Parallel training setup
+Running simultaneously on separate RunPod pods:
 
-### Recommendation
-**Yes, train FLUX** if time permits. Use same 270-image dataset. Key changes:
-- `caption_dropout_rate: 0.15` (fix trigger word binding)
+| | SDXL v2 | FLUX |
+|--|---------|------|
+| Pod | 2x A40 (48GB/card, using 1) | A100 SXM 80GB |
+| IP | 195.26.232.162:56746 | 64.247.206.116:17763 |
+| Cost | $0.40/hr spot | $1.22/hr spot |
+| Config | `train_config_sdxl_runpod.yaml` | `train_config_flux.yaml` |
+| Job name | `sim_aesthetic_sdxl_v2` | `sim_aesthetic_flux` |
+| Est. time | ~55 min | ~1-2 hrs |
+| Status | **Training** | **Training** |
+
+### FLUX training notes
+- Model: `black-forest-labs/FLUX.1-dev` (open weights, trainable)
+- NOT FLUX Kontext/Klein (API-only, no LoRA training)
+- Required HF auth login (`huggingface-cli login`) — gated model
 - `noise_scheduler: flowmatch` (not ddpm)
-- `guidance_scale: 3.5` (FLUX uses lower cfg)
-- RunPod A100 80GB, estimate ~1-2 hrs
-- Compare FLUX vs SDXL outputs in grid — strong interview artifact
+- `guidance_scale: 3.5` (FLUX uses lower cfg than SDXL's 6-7)
+- `quantize: true` — fp8 to fit A100 80GB
+- FLUX loads fp32 before quantizing — L40S 48GB OOMs, must use A100 80GB
 
-### If no time for FLUX training
-Focus on maximizing SDXL output quality:
-- Retrain SDXL with `caption_dropout_rate: 0.15` for stronger trigger
-- Generate more diverse outputs (different prompts, denoise values)
-- Build rich comparison grid + overlay video
+### Pod management
+```bash
+# Updated pod.sh supports both pods:
+./scripts/pod.sh flux connect    # SSH into FLUX pod
+./scripts/pod.sh sdxl connect    # SSH into SDXL pod
+./scripts/pod.sh flux loras      # Download FLUX checkpoints
+./scripts/pod.sh sdxl loras      # Download SDXL v2 checkpoints
+./scripts/pod.sh flux stop       # Stop FLUX pod
+./scripts/pod.sh sdxl stop       # Stop SDXL pod
+```
+
+### GPU selection learnings
+- Multi-GPU pods don't help for LoRA training — ai-toolkit uses `cuda:0` only
+- 4x RTX 4090 (24GB each) can't fit FLUX on one card despite 96GB total
+- A100 SXM 80GB is the cheapest single-card option for FLUX ($1.22/hr spot)
+- 2x A40 at $0.40/hr spot is cheapest for SDXL (48GB/card, only need one)
+- Volume disk: 50GB minimum (20GB too small for FLUX model + dataset + checkpoints)
 
 ---
 
@@ -246,14 +265,17 @@ Focus on maximizing SDXL output quality:
 - [x] Batch run on sim_aesthetic (270 frames, img2img_lora) — strong results
 - [x] Batch run on sim_aesthetic_2 — identified denoise too low for dense content
 
+### In progress
+- [~] FLUX LoRA training — A100 80GB, running
+- [~] SDXL v2 retrain — A40 48GB, running (caption_dropout 0.15)
+
 ### To do
+- [ ] Download + test FLUX and SDXL v2 checkpoints
+- [ ] Compare FLUX vs SDXL v2 outputs in grid — interview artifact
 - [ ] **Denoise sweep on sim_aesthetic_2** — find optimal denoise (likely 0.8-0.9)
 - [ ] **Re-batch sim_aesthetic_2** with tuned parameters
-- [ ] FLUX LoRA training (A100 80GB, ~$2-3/hr)
-- [ ] Retrain SDXL with `caption_dropout_rate: 0.15`
 - [ ] Overlay composite video (overlay_composite.py ready, needs re-prepped dataset with coords)
 - [ ] Depth ControlNet vs Canny for organic content
 - [ ] IPAdapter chained mode (style continuity across frames)
 - [ ] Non-sim prompts: coral reef, aerial city, mycelium over sim structure
-- [ ] Try inpainting approach (luminance mask → only regenerate bright regions)
 - [ ] Multi-param sweep (denoise × LoRA strength matrix)

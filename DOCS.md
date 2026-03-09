@@ -8,7 +8,7 @@ Source: 91 ultrawide frames (14336x1920) from Unity Edge of Chaos — Physarum s
 
 ## FLUX vs SDXL — Direct Comparison
 
-Same source frames, same prompt, matched parameters. Three-row grid: raw simulation, SDXL v2, FLUX.
+Same source frames, same prompt, tuned parameters. Three-row grid: raw simulation, SDXL v2, FLUX.
 
 ![FLUX vs SDXL comparison](docs/grid-flux-vs-sdxl.png)
 
@@ -56,7 +56,7 @@ Trained FLUX.1-dev LoRA on RunPod A100 80GB (~10 hrs, 2500 steps). Flow matching
 
 ---
 
-## Overlay Compositing
+## Overlay Compositing - SDXL v2
 
 AI-rendered crops composited back onto ultrawide frames at their original coordinates. The pipeline preserves the simulation's panoramic scale while adding photorealistic texture to structure regions.
 
@@ -87,12 +87,6 @@ Built automated sweep tooling: vary one parameter, fixed seed, labeled compariso
 ![2D sweep — LoRA x ControlNet](docs/grid-sweep-lora-x-controlnet.png)
 
 *Rows: LoRA strength (0.15 to 0.5). Columns: ControlNet strength (0.5 to 1.0). Lower LoRA = more creative freedom; higher ControlNet = tighter structure lock.*
-
-### LoRA Strength Sweep
-
-![SDXL LoRA strength sweep](docs/sweep-sdxl-lora-strength.png)
-
-*LoRA strength is a creativity dial. Low (0.3-0.4): SDXL reimagines freely, LoRA provides subtle guidance — more surprising, organic textures. High (0.85-0.95): faithful reproduction of the training aesthetic. Strength is the primary creative knob — more important than denoise for controlling output character.*
 
 ### Denoise Sweep
 
@@ -132,6 +126,17 @@ The LoRA learned the aesthetic by step 1250 — cyan veins, amber fill, particle
 270 training pairs from 91 frames. Random 1024x1024 crops from the middle 30% of horizontal space, brightness-filtered to reject void regions. Crop coordinates saved in a manifest for later overlay compositing.
 
 Key lesson: center-cropping ultrawide = always the same region. Random sampling with a focus band = diverse views of the simulation's spatial structure.
+
+Original ultrawide frames (14336x1920) from Unity Edge of Chaos — Physarum slime mold + Boids flocking hybrid simulation + responding to external texture of Termite sims. Original work developed for [Quantum Global Organoid Orchestra](https://merttoka.com/qGOO). 
+
+![Frame 2000 — early, sparse](docs/source-frame-2000.jpg)
+*Frame 2000 — early simulation. Sparse structure, mostly void.*
+
+![Frame 20000 — mid, developing](docs/source-frame-20000.jpg)
+*Frame 20000 — mid simulation. Networks forming, density increasing.*
+
+![Frame 38000 — late, dense](docs/source-frame-38000.jpg)
+*Frame 38000 — late simulation. Dense interconnected networks.*
 
 ---
 

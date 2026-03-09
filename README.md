@@ -41,12 +41,7 @@ Unity Edge of Chaos (Physarum + Boids)
     make_grid.py → comparison grids (timelapse, batched, sweep)
 ```
 
-### LoRA Strength × ControlNet Strength sweep
-
-![2D sweep — LoRA strength × ControlNet strength](docs/grid-sweep-lora-x-controlnet.png) 
-
-*Frame 10500 -- Rows: LoRA strength (0.15 → 0.5). Columns: ControlNet strength (0.5 → 1.0). Lower LoRA = more creative freedom; higher ControlNet = tighter structure lock.*
-
+See [DOCS.md](DOCS.md) for full exploration notes with parameter sweeps, FLUX vs SDXL comparisons, and more.
 
 ## Quick Start
 

@@ -159,7 +159,7 @@ make_grid.py → side-by-side comparison grids
   - `--limit N` to process only first N frames
   - `--denoise`, `--cfg`, `--seed` override workflow defaults
   - `--mode parallel|chained` (chained uses prev output as style ref)
-  - Host: `--host http://192.168.0.52:8188` (no trailing slash!)
+  - Host: `--host http://<comfyui-host>:8188` (no trailing slash!)
 
 ### Parameter sweeps
 - `sweep_denoise.py`: vary one parameter, fixed seed, auto-generates labeled comparison grid
@@ -279,7 +279,8 @@ Running simultaneously on separate RunPod pods:
 
 ### In progress
 - [~] FLUX LoRA training — A100 80GB, ~10hrs, running
-- [~] Batch run on sim_aesthetic_2 with v2 LoRA, denoise 0.76
+- [~] Batch run on sim_aesthetic_2 with v2 LoRA, denoise 0.76, lora-strength 0.35
+- [~] 2D sweep: LoRA strength × ControlNet strength matrix
 
 ### To do
 - [ ] Timelapse grid from sim_aesthetic_2 v2 batch

@@ -64,13 +64,13 @@ python scripts/prepare_dataset.py -i recordings/ -o datasets/sim_aesthetic/ \
 # 3. Batch process through ComfyUI
 python scripts/batch_process.py \
   -i datasets/sim_aesthetic/ -w workflows/sdxl_img2img_lora.json \
-  --host http://192.168.0.52:8188 --denoise 0.6 --limit 50
+  --host http://<comfyui-host>:8188 --denoise 0.6 --limit 50
 
 # 4. Parameter sweep
 python scripts/sweep_denoise.py \
   -i datasets/sim_aesthetic/img_010.png \
   -w workflows/sdxl_img2img_lora.json \
-  --host http://192.168.0.52:8188 \
+  --host http://<comfyui-host>:8188 \
   -p 3.denoise --range 0.5,0.95,6
 
 # 5. Comparison grid (timelapse mode)

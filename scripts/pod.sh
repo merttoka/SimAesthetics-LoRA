@@ -7,14 +7,14 @@
 #   ./pod.sh sdxl loras                    # Download sdxl LoRA checkpoints
 
 # ── Pod configs ───────────────────────────────
-declare -A POD_IPS POD_PORTS POD_JOBS
-POD_IPS[flux]="64.247.206.116"
-POD_PORTS[flux]="17763"
-POD_JOBS[flux]="sim_aesthetic_flux"
-
-POD_IPS[sdxl]="195.26.232.162"
-POD_PORTS[sdxl]="56746"
-POD_JOBS[sdxl]="sim_aesthetic_sdxl_v2"
+# Load from pod_config.sh (gitignored) or set defaults
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -f "$SCRIPT_DIR/pod_config.sh" ]]; then
+  source "$SCRIPT_DIR/pod_config.sh"
+else
+  echo "No pod_config.sh found. Copy pod_config.example.sh and fill in your pod IPs."
+  exit 1
+fi
 # ──────────────────────────────────────────────
 
 POD="$1"

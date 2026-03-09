@@ -4,7 +4,7 @@ Replaces the BFL API client from BFL_FLUXdemos with local/LAN ComfyUI calls.
 Connects from Mac to ComfyUI running on Windows (3080) via LAN.
 
 Usage:
-    client = ComfyUIClient("http://192.168.x.x:8188")
+    client = ComfyUIClient("http://<comfyui-host>:8188")
     result = client.run_workflow(workflow, {"image": "path/to/frame.png"})
 """
 

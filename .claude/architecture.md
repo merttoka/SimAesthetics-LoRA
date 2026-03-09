@@ -19,7 +19,7 @@ Unity Edge of Chaos (Physarum + Boids)
     └── 6 checkpoints (every 250 steps)
          │
          ▼
-    ComfyUI (Windows 3080 LAN, http://192.168.0.52:8188)
+    ComfyUI (Windows 3080 LAN, http://<comfyui-host>:8188)
     ├── batch_process.py → N frames through workflow
     ├── sweep_denoise.py → parameter sweeps with grids
     └── make_grid.py → comparison grids
@@ -34,7 +34,7 @@ Unity Edge of Chaos (Physarum + Boids)
 |--------|---------|
 | `prepare_dataset.py` | Crop + caption sim frames. Saves coordinates in manifest.json |
 | `batch_process.py` | Send frames to ComfyUI API, save outputs. `--limit`, `--denoise`, `--lora-strength`, `--mode` |
-| `sweep_denoise.py` | Parameter sweep: vary one param, fixed seed, produces labeled grid |
+| `sweep_denoise.py` | Parameter sweep: 1D or 2D (matrix), fixed seed, labeled grid. `-p`/`-p2` |
 | `make_grid.py` | Comparison grids. `--timelapse`, `--count`/`--iter`, auto-wrap layout |
 | `overlay_composite.py` | Paste AI crops back onto ultrawide frames at original coords |
 | `comfyui_client.py` | ComfyUI HTTP/WebSocket API client |
@@ -101,7 +101,7 @@ UI-format versions (for drag-and-drop into ComfyUI canvas):
 python scripts/sweep_denoise.py \
   -i datasets/sim_aesthetic_2/img_010.png \
   -w workflows/sdxl_img2img_lora.json \
-  --host http://192.168.0.52:8188 \
+  --host http://<comfyui-host>:8188 \
   -p 3.denoise --range 0.5,0.95,6 \
   -o outputs/sweep_denoise/
 
@@ -115,6 +115,15 @@ python scripts/sweep_denoise.py ... -p 3.cfg --range 3,12,4
 python scripts/sweep_denoise.py \
   -w workflows/sdxl_controlnet_lora.json \
   -p 20.strength --range 0.3,1.0,5
+
+# 2D sweep: LoRA strength × ControlNet strength (matrix grid)
+python scripts/sweep_denoise.py \
+  -i datasets/sim_aesthetic_2/img_010.png \
+  -w workflows/sdxl_controlnet_lora.json \
+  --host http://<comfyui-host>:8188 \
+  -p 40.strength_model --range 0.15,0.5,4 \
+  -p2 20.strength --range2 0.3,0.8,4 \
+  -o outputs/sweep_lora_x_cn/
 ```
 
 ## Grid Creation
@@ -158,8 +167,8 @@ Auto-wraps into rows when pairs > `--max-cols` (default 8), keeping cols >= rows
 ### Training round 2 pods
 ```bash
 # Pod management (pod.sh supports both)
-./scripts/pod.sh flux connect     # A100 80GB — 64.247.206.116:17763
-./scripts/pod.sh sdxl connect     # A40 48GB  — 195.26.232.162:56746
+./scripts/pod.sh flux connect     # A100 80GB (IP in pod_config.sh)
+./scripts/pod.sh sdxl connect     # A40 48GB  (IP in pod_config.sh)
 ./scripts/pod.sh flux loras       # download FLUX checkpoints
 ./scripts/pod.sh sdxl loras       # download SDXL v2 checkpoints
 ./scripts/pod.sh flux stop

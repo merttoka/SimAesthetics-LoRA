@@ -1,7 +1,7 @@
 """Sweep KSampler settings on txt2img via ComfyUI API.
 
 Usage:
-    python sweep_txt2img.py --host http://192.168.1.189:8188
+    python sweep_txt2img.py --host http://127.0.0.1:8188
 """
 
 import argparse
@@ -105,7 +105,7 @@ def run_sweep(client, sweep_name, seed):
 
 def main():
     parser = argparse.ArgumentParser(description="Sweep txt2img settings")
-    parser.add_argument("--host", default="http://192.168.1.189:8188")
+    parser.add_argument("--host", default="http://127.0.0.1:8188")
     parser.add_argument("--sweep", choices=list(SWEEPS.keys()) + ["all"], default="all")
     parser.add_argument("--seed", type=int, default=42, help="Fixed seed for comparison")
     parser.add_argument("--prompt", help="Override positive prompt")

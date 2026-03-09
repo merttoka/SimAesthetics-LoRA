@@ -195,7 +195,6 @@ Running simultaneously on separate RunPod pods:
 | | SDXL v2 | FLUX |
 |--|---------|------|
 | Pod | 2x A40 (48GB/card, using 1) | A100 SXM 80GB |
-| IP | 195.26.232.162:56746 | 64.247.206.116:17763 |
 | Cost | $0.40/hr spot | $1.22/hr spot |
 | Config | `train_config_sdxl_runpod.yaml` | `train_config_flux.yaml` |
 | Job name | `sim_aesthetic_sdxl_v2` | `sim_aesthetic_flux` |

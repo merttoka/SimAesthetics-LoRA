@@ -89,16 +89,19 @@ COMFY_SimAesthetics/
 
 ## Hardware
 
-| Task | 3080 (10GB) | RunPod L40S | Mac |
-|------|:-----------:|:----------:|:---:|
-| SDXL img2img / ControlNet | 1024px | — | — |
-| SDXL LoRA training (rank 16) | ~80hr | ~55min | — |
-| Flux LoRA training | OOM | OOM (48GB) | — |
-| Dataset prep / scripting | — | — | Yes |
+
+| Task                         | 3080 (10GB) | RunPod L40S | Mac |
+| ---------------------------- | ----------- | ----------- | --- |
+| SDXL img2img / ControlNet    | 1024px      | —           | —   |
+| SDXL LoRA training (rank 16) | ~80hr       | ~55min      | —   |
+| Flux LoRA training           | OOM         | OOM (48GB)  | —   |
+| Dataset prep / scripting     | —           | —           | Yes |
+
 
 ## Models Required
 
 **On Windows 3080:**
+
 - `sd_xl_base_1.0.safetensors` + `sdxl_vae.safetensors`
 - `control-lora-canny-rank256.safetensors` (SDXL ControlNet)
 - Custom LoRA: `sim_aesthetic_sdxl.safetensors` (trained, rank 16)

@@ -1,5 +1,4 @@
 {
-  "_comment": "img2img + LoRA — best approach for sim frames. Preserves void regions, adds texture to structure only.",
   "1": {
     "class_type": "CheckpointLoaderSimple",
     "inputs": {

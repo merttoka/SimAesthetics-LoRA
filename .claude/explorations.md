@@ -103,6 +103,12 @@ This reframes the pipeline: the diffusion model is a **selective texture synthes
 - **ControlNet alone (txt2img)**: fills void regions. Not ideal for sim aesthetic
 - **ControlNet Canny on sim frames**: redundant — sim IS edges. Depth ControlNet may be better (untested)
 
+### Denoise is content-dependent
+- **Sparse frames** (sim_aesthetic, lots of void): denoise 0.5-0.7 works well. Strong transformation
+- **Dense frames** (sim_aesthetic_2, filled structure): denoise 0.6 produces near-identical output. **Need 0.8-0.9** for visible transformation
+- This is because img2img starts from the encoded image — denser input = less room for the model to reimagine at low denoise
+- **Always sweep denoise for new source material**
+
 ### Trigger word behavior
 - `simaesthetic` alone: weak activation. Needs full descriptive prompt alongside
 - `simaesthetic` + full caption + LoRA 0.9: strong activation
@@ -137,19 +143,42 @@ make_grid.py → side-by-side comparison grids
 
 ---
 
-## 6. Batch Processing Infrastructure
+## 6. Batch Processing & Sweep Infrastructure
 
-### Scripts
-- `batch_process.py`: sends frames to ComfyUI over LAN, saves outputs locally. Supports `--limit`, `--denoise`, `--cfg`, `--seed`, parallel/chained modes
-- `make_grid.py`: side-by-side grids from pairs or directories
-- `overlay_composite.py`: composites AI crops back onto ultrawide source frames using manifest coordinates. Supports `--side-by-side` and `--opacity`
-- `pod.sh`: RunPod SSH/SCP helper for training
+### Batch processing
+- `batch_process.py`: sends frames to ComfyUI over LAN, saves outputs locally
+  - `--limit N` to process only first N frames
+  - `--denoise`, `--cfg`, `--seed` override workflow defaults
+  - `--mode parallel|chained` (chained uses prev output as style ref)
+  - Host: `--host http://192.168.0.52:8188` (no trailing slash!)
+
+### Parameter sweeps
+- `sweep_denoise.py`: vary one parameter, fixed seed, auto-generates labeled comparison grid
+  - `--range start,end,steps` for evenly spaced values (e.g. `--range 0.5,0.95,6`)
+  - `--values` for explicit values (e.g. `--values 0.5,0.7,0.9`)
+  - Grid shows original + all sweep results side by side with labels
+  - Sweepable params per workflow documented in `architecture.md`
+
+### Grid creation (`make_grid.py`)
+- Layout: vertical pairs (sim top, AI bottom), extending horizontally
+- `--timelapse`: reads manifest.json, picks one crop per source frame, sorted by frame number. Labels show frame numbers (e.g. f0500, f1000)
+- `--count N --iter M`: generate M grids of N pairs each
+- `--start` / `--end`: index range selection
+- Auto-wraps into rows when pairs > `--max-cols` (default 8), always cols >= rows
+- Range appended to filename: `grid_0-8.png`, `grid_8-16.png`
 
 ### Overlay video pipeline
-1. `prepare_dataset.py` saves crop coordinates in manifest.json
+1. `prepare_dataset.py` saves crop coordinates in manifest.json (x, y, crop_size, source dims)
 2. `batch_process.py` generates AI outputs
 3. `overlay_composite.py` pastes AI crops back at original coordinates on ultrawide frames
 4. `ffmpeg` encodes to video
+
+### ComfyUI API gotchas discovered
+- **No `_comment` keys in workflow JSON**: Impact Pack's `onprompt` hook iterates all keys expecting node dicts — non-node keys crash it with 500
+- **No `Reroute` nodes**: same Impact Pack crash — wire outputs directly to inputs
+- **No trailing `/` on host URL**: causes double-slash in API paths
+- **ComfyUI needs restart to pick up new LoRA files** in `models/loras/`
+- **Impact Pack error is silent**: server returns generic "500 Internal Server Error" with no details
 
 ---
 
@@ -206,12 +235,25 @@ Focus on maximizing SDXL output quality:
 
 ## 9. Unresolved / Next Steps
 
+### Done
+- [x] Batch processing pipeline (batch_process.py + make_grid.py)
+- [x] Crop coordinate tracking in manifest.json
+- [x] Parameter sweep tooling (sweep_denoise.py)
+- [x] Timelapse grid mode (one crop per source frame, sorted by time)
+- [x] Auto-wrapping grid layout (cols >= rows, landscape orientation)
+- [x] UI-format workflows for ComfyUI canvas drag-and-drop
+- [x] Fixed Impact Pack crashes (removed _comment keys, Reroute nodes)
+- [x] Batch run on sim_aesthetic (270 frames, img2img_lora) — strong results
+- [x] Batch run on sim_aesthetic_2 — identified denoise too low for dense content
+
+### To do
+- [ ] **Denoise sweep on sim_aesthetic_2** — find optimal denoise (likely 0.8-0.9)
+- [ ] **Re-batch sim_aesthetic_2** with tuned parameters
 - [ ] FLUX LoRA training (A100 80GB, ~$2-3/hr)
 - [ ] Retrain SDXL with `caption_dropout_rate: 0.15`
-- [x] ~~Batch process comparison grid~~ → batch_process.py + make_grid.py working
-- [x] ~~Crop coordinate tracking~~ → manifest.json now saves x/y/crop_size
 - [ ] Overlay composite video (overlay_composite.py ready, needs re-prepped dataset with coords)
 - [ ] Depth ControlNet vs Canny for organic content
 - [ ] IPAdapter chained mode (style continuity across frames)
 - [ ] Non-sim prompts: coral reef, aerial city, mycelium over sim structure
 - [ ] Try inpainting approach (luminance mask → only regenerate bright regions)
+- [ ] Multi-param sweep (denoise × LoRA strength matrix)

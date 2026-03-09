@@ -1,16 +1,15 @@
-# ai-toolkit LoRA training config — SDXL, RunPod L40S/A100
+# ai-toolkit LoRA training config — SDXL v2, RunPod L40S
 # Dataset: 270 images of Physarum/Boid sim crops, 1024x1024
-# Usage: python run.py /workspace/train_config_sdxl_runpod.yaml
-#
-# Expected: ~15 min on L40S/A100
-# Note: set HF_HOME=/workspace/.cache/huggingface before running
+# RETRAIN: caption_dropout_rate 0.05 → 0.15 for stronger trigger word binding
+# Usage: export HF_HOME=/workspace/.cache/huggingface && python run.py /workspace/train_config_sdxl_runpod.yaml
+# Expected: ~55 min on L40S
 
 job: extension
 config:
-  name: "sim_aesthetic_sdxl"
+  name: "sim_aesthetic_sdxl_v2"
   process:
     - type: "sd_trainer"
-      training_folder: "/workspace/output/sim_aesthetic_sdxl"
+      training_folder: "/workspace/output/sim_aesthetic_sdxl_v2"
       device: "cuda:0"
       trigger_word: "simaesthetic"
       network:
@@ -24,7 +23,7 @@ config:
       datasets:
         - folder_path: "/workspace/datasets/sim_aesthetic"
           caption_ext: "txt"
-          caption_dropout_rate: 0.05
+          caption_dropout_rate: 0.15
           resolution: 1024
           is_reg: false
       train:

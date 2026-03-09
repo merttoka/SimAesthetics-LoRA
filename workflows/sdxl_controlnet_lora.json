@@ -1,5 +1,4 @@
 {
-  "_comment": "img2img + ControlNet Canny + LoRA — structure preservation with aesthetic. Use denoise 0.5-0.7.",
   "1": {
     "class_type": "CheckpointLoaderSimple",
     "inputs": {
@@ -24,8 +23,8 @@
       "scheduler": "karras",
       "denoise": 0.6,
       "model": ["40", 0],
-      "positive": ["21", 0],
-      "negative": ["22", 0],
+      "positive": ["20", 0],
+      "negative": ["20", 1],
       "latent_image": ["5", 0]
     }
   },
@@ -91,16 +90,6 @@
       "control_net": ["16", 0],
       "image": ["15", 0]
     }
-  },
-  "21": {
-    "class_type": "Reroute",
-    "inputs": { "input": ["20", 0] },
-    "_meta": { "title": "CN Positive" }
-  },
-  "22": {
-    "class_type": "Reroute",
-    "inputs": { "input": ["20", 1] },
-    "_meta": { "title": "CN Negative" }
   },
   "40": {
     "class_type": "LoraLoader",

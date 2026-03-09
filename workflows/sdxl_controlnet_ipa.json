@@ -1,5 +1,4 @@
 {
-  "_comment": "Full pipeline: ControlNet (structure from DLA) + IPAdapter (style from prev frame) + prompt. Equivalent to BFL API dual-image workflow.",
   "1": {
     "class_type": "CheckpointLoaderSimple",
     "inputs": {

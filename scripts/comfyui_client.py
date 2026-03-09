@@ -13,6 +13,7 @@ import time
 import uuid
 import urllib.request
 import urllib.parse
+import urllib.error
 from pathlib import Path
 from typing import Any
 
@@ -43,8 +44,12 @@ class ComfyUIClient:
             data=payload,
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as resp:
-            data = json.loads(resp.read())
+        try:
+            with urllib.request.urlopen(req) as resp:
+                data = json.loads(resp.read())
+        except urllib.error.HTTPError as e:
+            body = e.read().decode()
+            raise RuntimeError(f"ComfyUI rejected prompt ({e.code}): {body}") from e
         return data["prompt_id"]
 
     def get_history(self, prompt_id: str) -> dict:

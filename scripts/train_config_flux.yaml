@@ -1,15 +1,18 @@
-# ai-toolkit LoRA training config — FLUX.1-dev, RunPod A100 (40/80GB)
+# ai-toolkit LoRA training config — FLUX.1-dev, RunPod A100 80GB
 # Dataset: 270 images of Physarum/Boid sim crops, 1024x1024
+# caption_dropout_rate: 0.15 for strong trigger word binding
 #
 # RunPod setup:
-#   1. Spin up A100 pod (40GB+ VRAM), PyTorch 2.x template
-#   2. git clone https://github.com/ostris/ai-toolkit && cd ai-toolkit
-#   3. pip install -r requirements.txt
-#   4. Upload dataset: rsync/scp datasets/sim_aesthetic/ to pod
-#   5. python run.py train_config_flux.yaml
+#   1. Spin up A100 80GB pod, PyTorch 2.x template
+#   2. export HF_HOME=/workspace/.cache/huggingface
+#   3. git clone https://github.com/ostris/ai-toolkit && cd ai-toolkit
+#   4. pip install -r requirements.txt
+#   5. Upload dataset to /workspace/datasets/sim_aesthetic/
+#   6. python run.py /workspace/train_config_flux.yaml
 #
-# Expected: ~15-20 min on A100 40GB, ~10 min on A100 80GB
-# Cost: ~$1-2 total
+# Expected: ~1-2 hrs on A100 80GB
+# Cost: ~$2-4 total
+# Note: FLUX loads fp32 (~24GB) before quantizing. L40S 48GB OOMs. Must use A100 80GB.
 
 job: extension
 config:
@@ -30,7 +33,7 @@ config:
       datasets:
         - folder_path: "/workspace/datasets/sim_aesthetic"
           caption_ext: "txt"
-          caption_dropout_rate: 0.05
+          caption_dropout_rate: 0.15
           resolution: 1024
           is_reg: false
       train:

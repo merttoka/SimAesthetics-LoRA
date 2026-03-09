@@ -1,5 +1,4 @@
 {
-  "_comment": "FLUX + Depth ControlNet + custom LoRA. Core lifecycle prototype workflow for satellite-to-aesthetic pipeline.",
   "1": {
     "class_type": "UNETLoader",
     "inputs": {

@@ -22,9 +22,9 @@
       "sampler_name": "dpmpp_2m_sde",
       "scheduler": "karras",
       "denoise": 1.0,
-      "model": ["20", 0],
-      "positive": ["21", 0],
-      "negative": ["22", 0],
+      "model": ["1", 0],
+      "positive": ["20", 0],
+      "negative": ["20", 1],
       "latent_image": ["7", 0]
     }
   },
@@ -94,18 +94,4 @@
     },
     "_meta": { "title": "Apply ControlNet" }
   },
-  "21": {
-    "class_type": "Reroute",
-    "inputs": {
-      "input": ["20", 0]
-    },
-    "_meta": { "title": "CN Positive" }
-  },
-  "22": {
-    "class_type": "Reroute",
-    "inputs": {
-      "input": ["20", 1]
-    },
-    "_meta": { "title": "CN Negative" }
-  }
 }

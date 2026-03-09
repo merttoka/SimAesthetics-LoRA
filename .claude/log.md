@@ -80,7 +80,7 @@ Load Image → VAE Encode → KSampler (denoise 0.5-0.7)
 - 0.3 = barely changes. 0.7 = rich texture, void stays dark
 
 ### Key insight
-This reframes the pipeline: the diffusion model is a **selective texture synthesizer** respecting the sim's spatial logic. Dark = void = entropy. Bright = structure = life. The model only "grows" where the algorithm says there's life.
+This reframes the pipeline: the diffusion model is a **selective texture synthesizer** respecting the sim's spatial logic. Dark = void = low entropy. Bright = structure = high entropy = life. The model only "grows" where the algorithm says there's life.
 
 ---
 
@@ -261,8 +261,8 @@ Running simultaneously on separate RunPod pods:
 - Training completed successfully, 6 checkpoints + final (165MB each)
 
 ### FLUX img2img results
-- Used `flux_sample.py` (diffusers-based, no ComfyUI) on A100 pod
-- **Initial batch params**: denoise 0.7, lora-strength 0.35, cfg 3.5, steps 28
+- Used `flux_sample.py` / `flux_sweep.py` (diffusers-based, no ComfyUI) on A100 pod
+- **v1 batch params**: denoise 0.7, lora-strength 0.35, cfg 3.5, steps 28
 - Prompt: `simaesthetic, bioluminescent organic network, physarum slime mold veins, cyan and amber glow, dark background`
 - Results look very good — distinct from SDXL, more photorealistic detail
 - FLUX vs SDXL comparison grid at `outputs/grid_flux_vs_sdxl.png`
@@ -314,9 +314,24 @@ Matched comparison grids using sim_aesthetic_2 timelapse frames (one crop per so
 - Both models preserve structural integrity of sim frames at these denoise levels
 - FLUX needs higher denoise than SDXL to get equivalent transformation (0.75 vs 0.6)
 
-### Pod stopped
-- FLUX A100 pod stopped after all generation complete
-- Total pod time: ~12hrs (training) + ~2hrs (inference/sweeps) ≈ $17 at $1.22/hr
+### FLUX v2 batch — parameter tuning & results
+- Tested denoise 0.7/lora 0.7 (8 test frames) and denoise 0.76/lora 0.6 (5 test frames)
+- **Final v2 params**: denoise 0.76, lora-strength 0.6, cfg 3.5, steps 28, seed 42
+- Higher denoise (0.76 vs 0.7) = more transformation on dense frames
+- Moderate LoRA (0.6) = balanced aesthetic without overwhelming source structure
+- **v2 batch complete** — 270 frames, ~38s/img on A100 (NFS disk), ~2.8hrs total
+- Results downloaded to `outputs/flux_batch_v2/`
+
+### FLUX v2 compositing & grids
+- **Timelapse grids**: 15 batches × 6 frames, sim vs FLUX side-by-side (`outputs/grid-flux-v2-timelapse_*.png`)
+- **FLUX vs SDXL comparison**: 3-row grid (sim/SDXL/FLUX), 6 frames spanning full timeline (`docs/grid-flux-vs-sdxl-v2.png`)
+- **Overlay composites (full)**: 90 side-by-side frames, AI crops at original coordinates (`outputs/composite_flux_v2/`)
+- **Overlay composites (variations)**: 2 scattered patches per crop, 128-512px range (`outputs/composite_flux_v2_var/`)
+
+### Pod notes
+- Original pod stopped after v1 batch + sweeps (~12hrs training + ~2hrs inference ≈ $17)
+- Migrated to new pod for v2 batch — NFS disk much slower, cold start ~5min vs instant
+- New pod required reinstalling: diffusers, peft, PyTorch 2.6.0
 
 ---
 
@@ -347,8 +362,13 @@ Matched comparison grids using sim_aesthetic_2 timelapse frames (one crop per so
 - [x] Generate FLUX txt2img + img2img samples via `flux_sample.py` on A100
 - [x] FLUX 1D sweeps: denoise, LoRA strength, steps — structural integrity confirmed
 - [x] FLUX 2D sweep: denoise × LoRA strength matrix (36 images)
-- [x] FLUX batch on sim_aesthetic_2 (270 frames, denoise 0.7, lora 0.35)
+- [x] FLUX v1 batch on sim_aesthetic_2 (270 frames, denoise 0.7, lora 0.35)
 - [x] FLUX vs SDXL matched comparison grids (3 LoRA strength variants)
+- [x] FLUX v2 batch on sim_aesthetic_2 (270 frames, denoise 0.76, lora 0.6) — complete
+- [x] FLUX v2 timelapse grids (15 batches × 6 frames)
+- [x] FLUX vs SDXL v2 comparison grid (3-row, 6 frames across full timeline)
+- [x] FLUX v2 overlay composites — full crops (90 frames, side-by-side)
+- [x] FLUX v2 overlay composites — variations mode (2 patches, 128-512px, 90 frames)
 
 ### Nice to have
 - [ ] Depth ControlNet vs Canny for organic content

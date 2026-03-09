@@ -5,11 +5,11 @@ End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → 
 ![Composite: AI-rendered crops overlaid on ultrawide simulation frame](docs/composite_hero.png)
 *Overlays: SDXL LoRA img2img crops composited onto ultrawide Physarum/Boids simulation frame. Background: original symbolic simulation output.*
 
-### FLUX vs SDXL LoRA — Early Frames
+### FLUX vs SDXL LoRA
 
-![FLUX vs SDXL comparison — early frames, FLUX LoRA 0.7](docs/grid-flux-vs-sdxl.png)
+![FLUX vs SDXL comparison across simulation timeline](docs/grid-flux-vs-sdxl-v2.png)
 
-*Top: raw simulation. Middle: SDXL v2 (denoise 0.6, LoRA 0.34, cfg 6.0). Bottom: FLUX (denoise 0.75, LoRA 0.7, cfg 3.5). Same dataset, same prompt. FLUX produces more photorealistic detail; higher LoRA strength pushes closer to the training aesthetic.*
+*Top: raw simulation. Middle: SDXL v2 (denoise 0.6, LoRA 0.34, cfg 6.0). Bottom: FLUX (denoise 0.76, LoRA 0.6, cfg 3.5). Six frames spanning the full 45k-step simulation timeline (sparse → dense). Both models preserve structural integrity; FLUX produces more photorealistic detail with smoother flow-matching transitions.*
 
 ## Pipeline
 
@@ -41,7 +41,7 @@ Unity Edge of Chaos (Physarum + Boids)
     make_grid.py → comparison grids (timelapse, batched, sweep)
 ```
 
-See [DOCS.md](DOCS.md) for full exploration notes with parameter sweeps, FLUX vs SDXL comparisons, and more.
+See [DOCS.md](DOCS.md) for full exploration notes with images of parameter sweeps, FLUX vs SDXL comparisons, and more.
 
 ## Quick Start
 
@@ -130,7 +130,7 @@ UI-format versions for drag-and-drop: `ui_sdxl_img2img_lora.json`, `ui_sdxl_cont
 | Config                          | Target          | Hardware         | Time   | Status   |
 | ------------------------------- | --------------- | ---------------- | ------ | -------- |
 | `train_config_sdxl_runpod.yaml` | SDXL v2 rank 16 | RunPod L40S 48GB | ~55min | Trained  |
-| `train_config_flux.yaml`        | FLUX rank 16    | RunPod A100 80GB | ~10hr  | Training |
+| `train_config_flux.yaml`        | FLUX rank 16    | RunPod A100 80GB | ~10hr  | Trained  |
 | `train_config_sdxl.yaml`        | SDXL v1 rank 16 | Local 3080 10GB  | ~80hr  | v1 done  |
 
 
@@ -142,6 +142,7 @@ UI-format versions for drag-and-drop: `ui_sdxl_img2img_lora.json`, `ui_sdxl_cont
 | SDXL img2img             | 1024px      | —                | —                | —   |
 | SDXL LoRA training       | ~80hr       | ~55min           | —                | —   |
 | FLUX LoRA training       | OOM         | OOM              | ~10hr            | —   |
+| FLUX img2img inference   | OOM         | —                | ~38s/img         | —   |
 | Dataset prep / scripting | —           | —                | —                | Yes |
 
 

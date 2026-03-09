@@ -10,14 +10,14 @@ Source: 91 ultrawide frames (14336x1920) from Unity Edge of Chaos — Physarum s
 
 Same source frames, same prompt, tuned parameters. Three-row grid: raw simulation, SDXL v2, FLUX.
 
-![FLUX vs SDXL comparison](docs/grid-flux-vs-sdxl.png)
+![FLUX vs SDXL comparison](docs/grid-flux-vs-sdxl-v2.png)
 
-*Top: raw simulation. Middle: SDXL v2 (denoise 0.6, LoRA 0.34, cfg 6.0). Bottom: FLUX (denoise 0.75, LoRA 0.7, cfg 3.5). FLUX produces more photorealistic detail; higher LoRA strength pushes closer to the training aesthetic.*
+*Top: raw simulation. Middle: SDXL v2 (denoise 0.6, LoRA 0.34, cfg 6.0). Bottom: FLUX v2 (denoise 0.76, LoRA 0.6, cfg 3.5). Six frames spanning the full 45k-step timeline. Both models preserve structural integrity; FLUX produces more photorealistic detail with smoother flow-matching transitions.*
 
-| | SDXL v2 | FLUX |
-|--|---------|------|
-| Denoise | 0.6 | 0.75 |
-| LoRA strength | 0.34 | 0.7 |
+| | SDXL v2 | FLUX v2 |
+|--|---------|---------|
+| Denoise | 0.6 | 0.76 |
+| LoRA strength | 0.34 | 0.6 |
 | CFG | 6.0 | 3.5 |
 | Steps | 30 | 28 |
 | Training time | ~55 min (L40S) | ~10 hrs (A100) |
@@ -27,8 +27,9 @@ Same source frames, same prompt, tuned parameters. Three-row grid: raw simulatio
 Key observations:
 - FLUX produces more photorealistic detail than SDXL at comparable settings
 - Both models preserve structural integrity of sim frames
-- FLUX needs higher denoise than SDXL for equivalent transformation (0.75 vs 0.6)
-- Higher FLUX LoRA strength (0.56-0.7) pushes output closer to training aesthetic (cyan/amber glow)
+- FLUX needs higher denoise than SDXL for equivalent transformation (0.76 vs 0.6)
+- Moderate FLUX LoRA strength (0.6) balances aesthetic intensity with source structure preservation
+- Higher LoRA (0.56-0.7) pushes closer to training aesthetic (cyan/amber glow)
 
 ---
 
@@ -103,7 +104,7 @@ Tested Canny ControlNet on sim frames. Two findings:
 1. **Canny on sim frames is redundant.** The simulation IS edges — bright structures on black. Extracting edges and regenerating produces near-identical output.
 2. **ControlNet txt2img fills void.** Black regions get populated with prompt-derived content. Breaks the spatial logic.
 
-**Solution: img2img instead.** VAE Encode the sim frame, denoise 0.5-0.7. The model starts from the actual image. Black stays black. The diffusion model becomes a **selective texture synthesizer** — it only "grows" where the algorithm says there's life.
+**Solution: img2img instead.** VAE Encode the sim frame, denoise 0.5-0.7. The model starts from the actual image. Black stays black. The diffusion model becomes a *selective texture synthesizer* — it only "grows" where the algorithm says there's life.
 
 ---
 
@@ -127,7 +128,7 @@ The LoRA learned the aesthetic by step 1250 — cyan veins, amber fill, particle
 
 Key lesson: center-cropping ultrawide = always the same region. Random sampling with a focus band = diverse views of the simulation's spatial structure.
 
-Original ultrawide frames (14336x1920) from Unity Edge of Chaos — Physarum slime mold + Boids flocking hybrid simulation + responding to external texture of Termite sims. Original work developed for [Quantum Global Organoid Orchestra](https://merttoka.com/qGOO). 
+Original ultrawide frames (14336x1920) developed to display at a circular display for [Quantum Global Organoid Orchestra](https://merttoka.com/qGOO). Unity Edge of Chaos — Physarum slime mold + Boids flocking hybrid simulation + responding to external texture of Termite sims. 
 
 ![Frame 2000 — early, sparse](docs/source-frame-2000.jpg)
 *Frame 2000 — early simulation. Sparse structure, mostly void.*

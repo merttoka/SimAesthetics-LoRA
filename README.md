@@ -3,17 +3,20 @@
 End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → ComfyUI img2img → photorealistic biological matter. Built with Unity Edge of Chaos simulation frames.
 
 ### Simulation → AI Rendered (sparse frames)
+
 ![Timelapse grid — sparse frames](docs/grid-timelapse-sparse.png)
 
 ### Simulation → AI Rendered (dense frames)
+
 ![Timelapse grid — dense frames](docs/grid-timelapse-dense.png)
 
-*Top row: raw Physarum/Boids simulation. Bottom row: same frames through SDXL LoRA (img2img, denoise 0.6, LoRA strength 0.35). The model acts as a selective texture synthesizer — void stays dark, structure gets organic detail.*
+*Top row: raw Physarum/Boids simulation. Bottom row: same frames through SDXL LoRA (img2img, denoise 0.6, LoRA strength ~0.35). The model acts as a selective texture synthesizer — void stays dark, structure gets organic detail.*
 
 ### LoRA Strength × ControlNet Strength sweep
-![2D sweep — LoRA strength × ControlNet strength](docs/grid-sweep-lora-x-controlnet.png)
 
-*Rows: LoRA strength (0.15 → 0.5). Columns: ControlNet strength (0.5 → 1.0). Lower LoRA = more creative freedom; higher ControlNet = tighter structure lock.*
+![2D sweep — LoRA strength × ControlNet strength](docs/grid-sweep-lora-x-controlnet.png) 
+
+*Frame 10500 -- Rows: LoRA strength (0.15 → 0.5). Columns: ControlNet strength (0.5 → 1.0). Lower LoRA = more creative freedom; higher ControlNet = tighter structure lock.*
 
 ## Pipeline
 
@@ -83,25 +86,29 @@ python scripts/overlay_composite.py \
 
 ## Scripts
 
-| Script | Purpose |
-|--------|---------|
-| `prepare_dataset.py` | Crop + caption sim frames. Saves coordinates in manifest.json |
-| `batch_process.py` | Send frames to ComfyUI API. `--limit`, `--denoise`, `--mode` |
-| `sweep_denoise.py` | Parameter sweep: vary one param, fixed seed, labeled grid |
-| `make_grid.py` | Comparison grids. `--timelapse`, `--count`/`--iter`, auto-wrap |
-| `overlay_composite.py` | Paste AI crops back onto ultrawide at original coords |
-| `comfyui_client.py` | ComfyUI HTTP/WebSocket API client |
-| `pod.sh` | RunPod SSH/SCP helper (`./pod.sh <flux\|sdxl> <command>`) |
+
+| Script                 | Purpose                                                        |
+| ---------------------- | -------------------------------------------------------------- |
+| `prepare_dataset.py`   | Crop + caption sim frames. Saves coordinates in manifest.json  |
+| `batch_process.py`     | Send frames to ComfyUI API. `--limit`, `--denoise`, `--mode`   |
+| `sweep_denoise.py`     | Parameter sweep: vary one param, fixed seed, labeled grid      |
+| `make_grid.py`         | Comparison grids. `--timelapse`, `--count`/`--iter`, auto-wrap |
+| `overlay_composite.py` | Paste AI crops back onto ultrawide at original coords          |
+| `comfyui_client.py`    | ComfyUI HTTP/WebSocket API client                              |
+| `pod.sh`               | RunPod SSH/SCP helper (`./pod.sh <flux|sdxl> <command>`)       |
+
 
 ## Workflows (ComfyUI API format)
 
-| Workflow | Description |
-|----------|-------------|
-| `sdxl_img2img_lora.json` | **Primary.** img2img + LoRA |
-| `sdxl_controlnet_lora.json` | img2img + Canny ControlNet + LoRA |
-| `sdxl_img2img.json` | img2img baseline (no LoRA) |
-| `sdxl_controlnet_canny.json` | ControlNet only (no LoRA) |
+
+| Workflow                          | Description                       |
+| --------------------------------- | --------------------------------- |
+| `sdxl_img2img_lora.json`          | **Primary.** img2img + LoRA       |
+| `sdxl_controlnet_lora.json`       | img2img + Canny ControlNet + LoRA |
+| `sdxl_img2img.json`               | img2img baseline (no LoRA)        |
+| `sdxl_controlnet_canny.json`      | ControlNet only (no LoRA)         |
 | `flux_controlnet_depth_lora.json` | FLUX + Depth CN + LoRA (untested) |
+
 
 UI-format versions for drag-and-drop: `ui_sdxl_img2img_lora.json`, `ui_sdxl_controlnet_lora.json`
 
@@ -115,23 +122,28 @@ UI-format versions for drag-and-drop: `ui_sdxl_img2img_lora.json`, `ui_sdxl_cont
 
 ## Training
 
-| Config | Target | Hardware | Time | Status |
-|--------|--------|----------|------|--------|
-| `train_config_sdxl_runpod.yaml` | SDXL v2 rank 16 | RunPod L40S 48GB | ~55min | Trained |
-| `train_config_flux.yaml` | FLUX rank 16 | RunPod A100 80GB | ~10hr | Training |
-| `train_config_sdxl.yaml` | SDXL v1 rank 16 | Local 3080 10GB | ~80hr | v1 done |
+
+| Config                          | Target          | Hardware         | Time   | Status   |
+| ------------------------------- | --------------- | ---------------- | ------ | -------- |
+| `train_config_sdxl_runpod.yaml` | SDXL v2 rank 16 | RunPod L40S 48GB | ~55min | Trained  |
+| `train_config_flux.yaml`        | FLUX rank 16    | RunPod A100 80GB | ~10hr  | Training |
+| `train_config_sdxl.yaml`        | SDXL v1 rank 16 | Local 3080 10GB  | ~80hr  | v1 done  |
+
 
 ## Hardware
 
-| Task | 3080 (10GB) | RunPod L40S 48GB | RunPod A100 80GB | Mac |
-|------|-------------|------------------|------------------|-----|
-| SDXL img2img | 1024px | — | — | — |
-| SDXL LoRA training | ~80hr | ~55min | — | — |
-| FLUX LoRA training | OOM | OOM | ~10hr | — |
-| Dataset prep / scripting | — | — | — | Yes |
+
+| Task                     | 3080 (10GB) | RunPod L40S 48GB | RunPod A100 80GB | Mac |
+| ------------------------ | ----------- | ---------------- | ---------------- | --- |
+| SDXL img2img             | 1024px      | —                | —                | —   |
+| SDXL LoRA training       | ~80hr       | ~55min           | —                | —   |
+| FLUX LoRA training       | OOM         | OOM              | ~10hr            | —   |
+| Dataset prep / scripting | —           | —                | —                | Yes |
+
 
 ## Dependencies
 
 - Python 3.11+, Pillow, websocket-client
 - Optional: transformers+torch (captioning), playwright (frame capture)
 - ComfyUI custom nodes: ComfyUI-Manager, comfyui-controlnet-aux, ComfyUI_IPAdapter_plus
+

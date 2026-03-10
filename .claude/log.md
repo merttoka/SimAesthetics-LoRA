@@ -378,6 +378,7 @@ Matched comparison grids using sim_aesthetic_2 timelapse frames (one crop per so
 - [x] `.events.json` export for audio sync
 - [x] `events_to_midi.py` — standard MIDI export (ch1=SDXL, ch2=FLUX, CC pan/mod)
 - [x] 2min test render + MIDI export (270 events)
+- [ ] MIDI → DAW playback not yet tested (script runs, .mid file generated, but untested in DAW/PAM)
 
 ### Nice to have
 - [ ] Depth ControlNet vs Canny for organic content

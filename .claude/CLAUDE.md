@@ -50,7 +50,7 @@ ComfyUI + LoRA pipeline for generative simulation aesthetics. Replaces BFL API w
 - Exports `.events.json` alongside video for audio sync / MIDI generation
 - Patch sizing: `--variations 4 --min-patch 128 --max-patch 1024`
 - Reversed hold: large patches fade fast, small patches linger
-- `events_to_midi.py` converts events to standard MIDI (ch1=SDXL, ch2=FLUX, CC10=pan, CC1=mod)
+- `events_to_midi.py` converts events to standard MIDI (ch1=SDXL, ch2=FLUX, CC10=pan, CC1=mod) — **untested in DAW**
 
 ## Dependencies
 - Python 3.11+, Pillow, websocket-client, numpy

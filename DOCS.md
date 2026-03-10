@@ -163,7 +163,7 @@ Animated overlay video for Premiere compositing. AI crops appear as staggered pa
 ### Event export
 - `.events.json` saved alongside video — bridge between video and audio pipelines
 - Contains frame timing, patch coords, source info, fade parameters
-- `events_to_midi.py` converts to standard MIDI file (format 0):
+- `events_to_midi.py` converts to standard MIDI file (format 0) — **script runs but untested in DAW**:
   - Ch 1 = SDXL source, Ch 2 = FLUX source
   - Notes C2-C5: large patches = low, small = high
   - CC10 (pan) from x position, CC1 (mod wheel) from y position

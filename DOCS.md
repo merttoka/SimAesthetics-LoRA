@@ -171,7 +171,7 @@ Animated overlay video for Premiere compositing. AI crops appear as staggered pa
 
 ---
 
-## Open Questions
+## Next Explorations
 
 - Depth ControlNet vs Canny for organic content
 - IPAdapter chained mode for style continuity across frames

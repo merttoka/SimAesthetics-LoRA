@@ -173,6 +173,7 @@ Animated overlay video for Premiere compositing. AI crops appear as staggered pa
 
 ## Next Explorations
 
+- **FLUX.2 Klein 4B LoRA** — retrain on [`FLUX.2-klein-base-4B`](https://huggingface.co/black-forest-labs/FLUX.2-klein-base-4B) (undistilled, Apache 2.0). 4B params vs 12B FLUX.1-dev: ~13GB VRAM, potentially trainable on L40S, inference may run on 3080 with fp8. Same ai-toolkit workflow, needs new LoRA.
 - Depth ControlNet vs Canny for organic content
 - IPAdapter chained mode for style continuity across frames
 - Non-sim prompts: coral reef, aerial city, mycelium grown over sim structure

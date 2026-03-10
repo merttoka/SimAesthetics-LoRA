@@ -8,3 +8,4 @@ loras/*.safetensors
 *.ckpt
 *.pt
 scripts/pod_config.sh
+inputs/

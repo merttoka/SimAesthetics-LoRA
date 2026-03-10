@@ -39,6 +39,12 @@ Unity Edge of Chaos (Physarum + Boids)
          ▼
     overlay_composite.py → AI crops back onto ultrawide → video
     make_grid.py → comparison grids (timelapse, batched, sweep)
+         │
+         ▼
+    render_overlay_video.py → animated patches on green screen (60fps)
+    ├── stochastic SDXL→FLUX crossfade across timeline
+    ├── layered export (patches / annotations) for Premiere
+    └── .events.json → events_to_midi.py → MIDI for DAW audio
 ```
 
 See [DOCS.md](DOCS.md) for full exploration notes with images of parameter sweeps, FLUX vs SDXL comparisons, and more.
@@ -84,6 +90,20 @@ python scripts/overlay_composite.py \
   -m datasets/sim_aesthetic/manifest.json \
   -a outputs/ -s recordings/ -o outputs/composite_var/ \
   --variations 6 --patch-range 192,512 --side-by-side
+
+# 8. Animated overlay video (green screen for Premiere)
+python scripts/render_overlay_video.py \
+  --manifest datasets/sim_aesthetic_2/manifest.json \
+  --ai-dir-early outputs/img2img-lora_v2-3/ \
+  --ai-dir-late outputs/flux_batch_v2/ \
+  --crossfade-center 0.5 --bg 0,255,0 \
+  --variations 4 --min-patch 128 --max-patch 1024 \
+  --layer patches --out outputs/overlay_video.mp4
+
+# 9. Export MIDI for DAW audio sync
+python scripts/events_to_midi.py \
+  --events outputs/overlay_video.events.json \
+  --out outputs/overlay_events.mid --bpm 120
 ```
 
 ## Scripts
@@ -96,6 +116,8 @@ python scripts/overlay_composite.py \
 | `sweep_denoise.py`     | Parameter sweep: 1D or 2D matrix, fixed seed, labeled grid     |
 | `make_grid.py`         | Comparison grids. `--timelapse`, `--count`/`--iter`, auto-wrap |
 | `overlay_composite.py` | Composite AI onto ultrawides. `--side-by-side`, `--h-crop`, `--variations` |
+| `render_overlay_video.py` | Animated overlay video on green screen. `--layer`, `--ai-dir-early/late` |
+| `events_to_midi.py`    | Export overlay events as MIDI for DAW audio (ch1=SDXL, ch2=FLUX) |
 | `flux_sample.py`       | FLUX LoRA inference via diffusers (txt2img, img2img, batch)    |
 | `flux_sweep.py`        | FLUX parameter sweeps (denoise, LoRA, steps) with labeled grids |
 | `comfyui_client.py`    | ComfyUI HTTP/WebSocket API client                              |
@@ -148,7 +170,7 @@ UI-format versions for drag-and-drop: `ui_sdxl_img2img_lora.json`, `ui_sdxl_cont
 
 ## Dependencies
 
-- Python 3.11+, Pillow, websocket-client
+- Python 3.11+, Pillow, websocket-client, numpy
 - Optional: transformers+torch (captioning), playwright (frame capture)
 - ComfyUI custom nodes: ComfyUI-Manager, comfyui-controlnet-aux, ComfyUI_IPAdapter_plus
 

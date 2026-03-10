@@ -370,6 +370,15 @@ Matched comparison grids using sim_aesthetic_2 timelapse frames (one crop per so
 - [x] FLUX v2 overlay composites — full crops (90 frames, side-by-side)
 - [x] FLUX v2 overlay composites — variations mode (2 patches, 128-512px, 90 frames)
 
+### Done (Overlay Video + MIDI)
+- [x] `render_overlay_video.py` — animated overlay on green screen (4300x1920, 60fps)
+- [x] Dual-source stochastic crossfade (SDXL→FLUX sigmoid blend)
+- [x] Layered export (`--layer patches|annotations`) for Premiere
+- [x] Reversed hold mapping: large patches fade fast, small linger
+- [x] `.events.json` export for audio sync
+- [x] `events_to_midi.py` — standard MIDI export (ch1=SDXL, ch2=FLUX, CC pan/mod)
+- [x] 2min test render + MIDI export (270 events)
+
 ### Nice to have
 - [ ] Depth ControlNet vs Canny for organic content
 - [ ] IPAdapter chained mode (style continuity across frames)

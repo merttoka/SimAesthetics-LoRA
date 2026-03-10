@@ -18,6 +18,8 @@ ComfyUI + LoRA pipeline for generative simulation aesthetics. Replaces BFL API w
 - `sweep_txt2img.py` — KSampler settings sweep (ComfyUI)
 - `flux_sample.py` — FLUX LoRA inference: txt2img, img2img, batch directory
 - `flux_sweep.py` — FLUX parameter sweeps (denoise, LoRA strength, steps)
+- `render_overlay_video.py` — animated overlay video from AI crops (green screen, layered patches/annotations)
+- `events_to_midi.py` — export overlay events as MIDI for DAW-driven audio
 
 ## Workflows (ComfyUI API format JSON)
 - `sdxl_img2img.json` — basic img2img (no LoRA, baseline)
@@ -41,6 +43,15 @@ ComfyUI + LoRA pipeline for generative simulation aesthetics. Replaces BFL API w
 - `train_config_sdxl_runpod.yaml` — ai-toolkit config, RunPod L40S
 - `train_config_flux.yaml` — ai-toolkit config, cloud A100 (untested)
 
+## Overlay Video Pipeline
+- `render_overlay_video.py` renders AI crops as animated patches on green screen (4300x1920, 60fps)
+- Supports `--layer patches|annotations` for separate Premiere layers
+- Stochastic dual-source crossfade: `--ai-dir-early` (SDXL) / `--ai-dir-late` (FLUX) with sigmoid blend
+- Exports `.events.json` alongside video for audio sync / MIDI generation
+- Patch sizing: `--variations 4 --min-patch 128 --max-patch 1024`
+- Reversed hold: large patches fade fast, small patches linger
+- `events_to_midi.py` converts events to standard MIDI (ch1=SDXL, ch2=FLUX, CC10=pan, CC1=mod)
+
 ## Dependencies
-- Python 3.11+, Pillow, websocket-client
+- Python 3.11+, Pillow, websocket-client, numpy
 - Optional: transformers+torch (captioning), playwright (frame capture)

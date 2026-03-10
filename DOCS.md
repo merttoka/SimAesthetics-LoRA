@@ -141,6 +141,36 @@ Original ultrawide frames (14336x1920) developed to display at a circular displa
 
 ---
 
+## Overlay Video Pipeline
+
+Animated overlay video for Premiere compositing. AI crops appear as staggered patches on green screen (4300x1920, 60fps), with separate layers for patches and annotations.
+
+### Rendering
+- `render_overlay_video.py` — sweep-line algorithm over sorted event list, O(active) per frame
+- Stochastic dual-source crossfade: sigmoid probability curve, SDXL→FLUX across timeline
+- Green screen background (`--bg 0,255,0`) for Ultra Key in Premiere
+- `--layer patches` and `--layer annotations` export as separate videos for independent toggling
+- Patch sizing: 4 variations per crop, 128-1024px range
+- Reversed hold mapping: large patches flash and fade, small patches linger
+- Asymmetric spread: patches start ~150 frames before sample point, trail ~90 after
+- Raw RGB24 frames piped to ffmpeg stdin (no intermediate disk I/O)
+- LRU-cached patch resizing to avoid redundant PIL resize operations
+
+### Annotations
+- Labels: `sd . 384x384 . b042` or `fl . 768x768 . b115` (source, resolution, batch index)
+- Rendered via PIL, left-aligned below patch border
+
+### Event export
+- `.events.json` saved alongside video — bridge between video and audio pipelines
+- Contains frame timing, patch coords, source info, fade parameters
+- `events_to_midi.py` converts to standard MIDI file (format 0):
+  - Ch 1 = SDXL source, Ch 2 = FLUX source
+  - Notes C2-C5: large patches = low, small = high
+  - CC10 (pan) from x position, CC1 (mod wheel) from y position
+  - Note duration matches visual hold + fade timing
+
+---
+
 ## Open Questions
 
 - Depth ControlNet vs Canny for organic content

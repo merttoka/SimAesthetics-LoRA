@@ -3,9 +3,7 @@
 End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → ComfyUI img2img → photorealistic biological matter. Built with Unity Edge of Chaos simulation frames.
 
 ![Composite: AI-rendered crops overlaid on ultrawide simulation frame](docs/composite_hero.png)
-*Overlays: SDXL LoRA img2img crops composited onto ultrawide Physarum/Boids simulation frame. Background: original symbolic simulation output.*
-
-[![1-minute trailer](https://img.youtube.com/vi/9jAcW2oeHvI/maxresdefault.jpg)](https://youtu.be/9jAcW2oeHvI)
+*Overlays: SDXL LoRA img2img crops composited onto ultrawide Physarum/Boids simulation frame. Background: original symbolic simulation output. [1-minute trailer](https://youtu.be/9jAcW2oeHvI)*
 
 ### FLUX vs SDXL LoRA
 

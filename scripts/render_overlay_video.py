@@ -14,11 +14,11 @@ Usage:
         --ai-dir outputs/flux_batch_v2/ \
         --out outputs/overlay_video_test.mp4 --test
 
-    # Dual source: SDXL early → FLUX late
+    # Dual source: FLUX early → SDXL late
     python render_overlay_video.py \
         --manifest datasets/sim_aesthetic_2/manifest.json \
-        --ai-dir-early outputs/img2img-lora_v2-3/ \
-        --ai-dir-late outputs/flux_batch_v2/ \
+        --ai-dir-early outputs/flux_batch_v2/ \
+        --ai-dir-late outputs/img2img-lora_v2-3/ \
         --crossfade-center 0.5 \
         --out outputs/overlay_video.mp4
 
@@ -131,8 +131,8 @@ def pick_ai_dir(sim_step, ai_dir_early, ai_dir_late, crossfade_center, crossfade
     """Stochastically pick early or late AI source based on simulation progress.
 
     Uses a sigmoid-like probability curve centered at crossfade_center.
-    Early in the sim → favors ai_dir_early (e.g. SDXL).
-    Late in the sim → favors ai_dir_late (e.g. FLUX).
+    Early in the sim → favors ai_dir_early.
+    Late in the sim → favors ai_dir_late.
     """
     if ai_dir_early is None:
         return ai_dir_late
@@ -258,7 +258,7 @@ def get_resized_patch(ai_dir: str, ai_index: str, src_x: int, src_y: int,
 
 
 BORDER_COLOR = (204, 204, 204)  # #ccc
-BORDER_WIDTH = 2
+BORDER_WIDTH = 3
 LABEL_COLOR = (204, 204, 204)  # #ccc
 
 
@@ -267,7 +267,7 @@ def get_label_font():
     from PIL import ImageFont
     for name in ["/System/Library/Fonts/Menlo.ttc", "/System/Library/Fonts/Helvetica.ttc", "arial.ttf"]:
         try:
-            return ImageFont.truetype(name, 13)
+            return ImageFont.truetype(name, 22)
         except (OSError, IOError):
             continue
     return ImageFont.load_default()
@@ -433,8 +433,8 @@ def main():
     parser = argparse.ArgumentParser(description="Render overlay video for compositing")
     parser.add_argument("--manifest", "-m", required=True, help="manifest.json path")
     parser.add_argument("--ai-dir", "-a", help="Single AI source directory (use for all frames)")
-    parser.add_argument("--ai-dir-early", help="AI source for early frames (e.g. SDXL)")
-    parser.add_argument("--ai-dir-late", help="AI source for late frames (e.g. FLUX)")
+    parser.add_argument("--ai-dir-early", help="AI source for early frames (e.g. FLUX)")
+    parser.add_argument("--ai-dir-late", help="AI source for late frames (e.g. SDXL)")
     parser.add_argument("--crossfade-center", type=float, default=0.5,
                         help="Timeline position (0-1) where early/late sources are 50/50 (default: 0.5)")
     parser.add_argument("--crossfade-width", type=float, default=0.15,

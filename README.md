@@ -5,6 +5,8 @@ End-to-end pipeline: ALife simulations (Physarum + Boids) → LoRA training → 
 ![Composite: AI-rendered crops overlaid on ultrawide simulation frame](docs/composite_hero.png)
 *Overlays: SDXL LoRA img2img crops composited onto ultrawide Physarum/Boids simulation frame. Background: original symbolic simulation output.*
 
+[![1-minute trailer](https://img.youtube.com/vi/9jAcW2oeHvI/maxresdefault.jpg)](https://youtu.be/9jAcW2oeHvI)
+
 ### FLUX vs SDXL LoRA
 
 ![FLUX vs SDXL comparison across simulation timeline](docs/grid-flux-vs-sdxl-v2.png)

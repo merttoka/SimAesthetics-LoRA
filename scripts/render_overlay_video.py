@@ -44,14 +44,35 @@ import numpy as np
 from PIL import Image
 
 
-# Output dimensions: central 30% of 14336x1920
+# Source ultrawide dimensions
 SOURCE_W = 14336
-OUT_W = 4300  # int(14336 * 0.3) ≈ 4300 (even, h264 compatible)
-OUT_H = 1920
-WINDOW_X_START = (SOURCE_W - OUT_W) // 2  # 5018
+SOURCE_H = 1920
+
+# Default output: central 30% of ultrawide
+DEFAULT_OUT_W = 4300  # int(14336 * 0.3) ≈ 4300
+DEFAULT_OUT_H = 1920
 
 TOTAL_SIM_FRAMES = 45000
 FPS = 60
+
+
+def compute_layout(out_w, out_h):
+    """Compute source window and scale factor for target output resolution.
+
+    Returns (window_x_start, window_w_source, window_h_source, scale_x, scale_y).
+    The source window matches the output aspect ratio, centered horizontally.
+    """
+    aspect = out_w / out_h
+    # Source window: full height, width computed from aspect ratio
+    window_h = SOURCE_H
+    window_w = int(SOURCE_H * aspect)
+    window_w = min(window_w, SOURCE_W)  # clamp to source width
+    # Ensure even (h264)
+    window_w = window_w - (window_w % 2)
+    window_x_start = (SOURCE_W - window_w) // 2
+    scale_x = out_w / window_w
+    scale_y = out_h / window_h
+    return window_x_start, window_w, window_h, scale_x, scale_y
 
 
 @dataclass
@@ -150,6 +171,7 @@ def pick_ai_dir(sim_step, ai_dir_early, ai_dir_late, crossfade_center, crossfade
 
 
 def generate_events(entries, ai_dir_early, ai_dir_late, crossfade_center, crossfade_width,
+                    out_w, out_h, window_x_start, scale_x, scale_y,
                     seed=42, n_variations=4, min_patch=128, max_patch=512):
     """Generate all PatchEvents from manifest entries."""
     groups = group_by_source(entries)
@@ -182,14 +204,16 @@ def generate_events(entries, ai_dir_early, ai_dir_late, crossfade_center, crossf
             for px, py, ps in patches:
                 src_x_in_source = entry["x"] + int(px * scale)
                 src_y_in_source = entry["y"] + int(py * scale)
-                dst_size = int(ps * scale)
+                dst_size_raw = int(ps * scale)
 
-                dst_x = src_x_in_source - WINDOW_X_START
-                dst_y = src_y_in_source
+                # Map to output coordinates
+                dst_x = int((src_x_in_source - window_x_start) * scale_x)
+                dst_y = int(src_y_in_source * scale_y)
+                dst_size = int(dst_size_raw * scale_x)  # use scale_x (≈scale_y)
 
-                if dst_x + dst_size <= 0 or dst_x >= OUT_W:
+                if dst_x + dst_size <= 0 or dst_x >= out_w:
                     continue
-                if dst_y + dst_size <= 0 or dst_y >= OUT_H:
+                if dst_y + dst_size <= 0 or dst_y >= out_h:
                     continue
 
                 # Pick AI source stochastically
@@ -291,7 +315,7 @@ def make_event_label(event):
     return f"{source} . {res} . b{idx}"
 
 
-def draw_annotation(pil_img, dx, dy, size, label, alpha, bg_color):
+def draw_annotation(pil_img, dx, dy, size, label, alpha, bg_color, out_w, out_h):
     """Draw border + text label below the patch on a PIL Image."""
     from PIL import ImageDraw
 
@@ -315,28 +339,30 @@ def draw_annotation(pil_img, dx, dy, size, label, alpha, bg_color):
     # Text label below bottom-left of border
     text_y = y1 + 3
     text_x = x0
-    if 0 <= text_x < OUT_W and 0 <= text_y < OUT_H - 10:
+    if 0 <= text_x < out_w and 0 <= text_y < out_h - 10:
         draw.text((text_x, text_y), label, fill=label_c, font=font)
 
 
-def render_video(events, output_path, total_frames, bg_color, layer="patches", fps=60):
+def render_video(events, output_path, total_frames, bg_color, out_w, out_h,
+                 layer="patches", fps=60):
     """Render overlay video by streaming frames to ffmpeg.
 
-    layer: "patches" (AI images only) or "annotations" (borders + text only)
+    layer: "patches" (AI images only), "annotations" (borders + text only),
+           or "composite" (patches + annotations combined)
     """
     proc = subprocess.Popen([
         "ffmpeg", "-y",
         "-f", "rawvideo", "-pix_fmt", "rgb24",
-        "-s", f"{OUT_W}x{OUT_H}", "-r", str(fps),
+        "-s", f"{out_w}x{out_h}", "-r", str(fps),
         "-i", "-",
         "-c:v", "libx264", "-preset", "medium", "-crf", "18",
         "-pix_fmt", "yuv420p",
         str(output_path),
-    ], stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    ], stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
 
     bg_r, bg_g, bg_b = bg_color
     bg_pixel = bytes([bg_r, bg_g, bg_b])
-    bg_bytes = bg_pixel * (OUT_W * OUT_H)
+    bg_bytes = bg_pixel * (out_w * out_h)
     bg_array = np.array(bg_color, dtype=np.uint8)
 
     event_idx = 0
@@ -356,8 +382,8 @@ def render_video(events, output_path, total_frames, bg_color, layer="patches", f
         else:
             frames_with_patches += 1
 
-            if layer == "patches":
-                canvas = np.empty((OUT_H, OUT_W, 3), dtype=np.uint8)
+            if layer in ("patches", "composite"):
+                canvas = np.empty((out_h, out_w, 3), dtype=np.uint8)
                 canvas[:] = bg_array
 
                 for e in active:
@@ -382,18 +408,32 @@ def render_video(events, output_path, total_frames, bg_color, layer="patches", f
                     sy0 = max(0, -dy)
                     dx0 = max(0, dx)
                     dy0 = max(0, dy)
-                    sx1 = min(pw, OUT_W - dx)
-                    sy1 = min(ph, OUT_H - dy)
+                    sx1 = min(pw, out_w - dx)
+                    sy1 = min(ph, out_h - dy)
 
                     if sx1 > sx0 and sy1 > sy0:
                         canvas[dy0:dy0 + (sy1 - sy0), dx0:dx0 + (sx1 - sx0)] = \
                             patch_arr[sy0:sy1, sx0:sx1]
 
-                proc.stdin.write(canvas.tobytes())
+                if layer == "composite":
+                    # Overlay annotations on top of patches
+                    pil_img = Image.fromarray(canvas)
+                    for e in active:
+                        if frame <= e.frame_hold_end:
+                            alpha = 1.0
+                        else:
+                            progress = (frame - e.frame_hold_end) / max(1, e.frame_fade_end - e.frame_hold_end)
+                            alpha = 1.0 - progress
+                        label = make_event_label(e)
+                        draw_annotation(pil_img, e.dst_x, e.dst_y, e.dst_size,
+                                        label, alpha, bg_color, out_w, out_h)
+                    proc.stdin.write(np.array(pil_img).tobytes())
+                else:
+                    proc.stdin.write(canvas.tobytes())
 
             elif layer == "annotations":
                 # Use PIL for text rendering
-                pil_img = Image.new("RGB", (OUT_W, OUT_H), bg_color)
+                pil_img = Image.new("RGB", (out_w, out_h), bg_color)
 
                 for e in active:
                     if frame <= e.frame_hold_end:
@@ -404,7 +444,7 @@ def render_video(events, output_path, total_frames, bg_color, layer="patches", f
 
                     label = make_event_label(e)
                     draw_annotation(pil_img, e.dst_x, e.dst_y, e.dst_size,
-                                    label, alpha, bg_color)
+                                    label, alpha, bg_color, out_w, out_h)
 
                 proc.stdin.write(np.array(pil_img).tobytes())
 
@@ -420,8 +460,7 @@ def render_video(events, output_path, total_frames, bg_color, layer="patches", f
     proc.wait()
 
     if proc.returncode != 0:
-        stderr = proc.stderr.read().decode()
-        print(f"ffmpeg error: {stderr[-500:]}")
+        print(f"ffmpeg exited with code {proc.returncode}")
         return False
 
     elapsed = time.time() - t0
@@ -448,9 +487,20 @@ def main():
     parser.add_argument("--variations", type=int, default=4, help="Variations per crop (4-5)")
     parser.add_argument("--min-patch", type=int, default=128, help="Min patch size in source pixels")
     parser.add_argument("--max-patch", type=int, default=512, help="Max patch size in source pixels")
-    parser.add_argument("--layer", choices=["patches", "annotations"], default="patches",
-                        help="Render layer: patches (AI images) or annotations (borders + labels)")
+    parser.add_argument("--layer", choices=["patches", "annotations", "composite"], default="patches",
+                        help="Render layer: patches, annotations, or composite (both)")
+    parser.add_argument("--resolution", default=None,
+                        help="Output resolution as WxH (default: 4300x1920)")
     args = parser.parse_args()
+
+    # Resolve output resolution
+    if args.resolution:
+        out_w, out_h = (int(x) for x in args.resolution.split("x"))
+    else:
+        out_w, out_h = DEFAULT_OUT_W, DEFAULT_OUT_H
+
+    # Compute source window and scale
+    window_x_start, window_w, window_h, scale_x, scale_y = compute_layout(out_w, out_h)
 
     # Resolve AI directories
     if args.ai_dir:
@@ -473,10 +523,12 @@ def main():
         print(f"AI source: {ai_dir_late}")
     bg_color = tuple(int(x) for x in args.bg.split(","))
     print(f"Background: RGB{bg_color}")
+    print(f"Resolution: {out_w}x{out_h} (source window: {window_w}x{window_h} @ x={window_x_start})")
 
     events = generate_events(
         entries, ai_dir_early, ai_dir_late,
         args.crossfade_center, args.crossfade_width,
+        out_w, out_h, window_x_start, scale_x, scale_y,
         seed=args.seed, n_variations=args.variations,
         min_patch=args.min_patch, max_patch=args.max_patch,
     )
@@ -489,7 +541,7 @@ def main():
               f"{len(events)} events in range")
 
     duration = total_frames / FPS
-    print(f"Rendering {total_frames} frames at {FPS}fps ({duration:.1f}s), {OUT_W}x{OUT_H}")
+    print(f"Rendering {total_frames} frames at {FPS}fps ({duration:.1f}s), {out_w}x{out_h}")
 
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
 
@@ -498,15 +550,15 @@ def main():
     events_data = {
         "fps": FPS,
         "total_frames": total_frames,
-        "out_w": OUT_W,
-        "out_h": OUT_H,
+        "out_w": out_w,
+        "out_h": out_h,
         "events": [asdict(e) for e in events],
     }
     events_path.write_text(json.dumps(events_data))
     print(f"Saved {len(events)} events to {events_path}")
 
     print(f"Layer: {args.layer}")
-    render_video(events, args.out, total_frames, bg_color, args.layer, FPS)
+    render_video(events, args.out, total_frames, bg_color, out_w, out_h, args.layer, FPS)
 
 
 if __name__ == "__main__":
